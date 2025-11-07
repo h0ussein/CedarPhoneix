@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { categoriesAPI } from '../../utils/api'
 
 const AdminCategories = () => {
   const navigate = useNavigate()
@@ -14,12 +15,7 @@ const AdminCategories = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/categories/admin/all', {
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        }
-      })
-      const data = await response.json()
+      const data = await categoriesAPI.getAllAdmin()
       if (data.success) {
         setCategories(data.data)
       }
@@ -34,27 +30,15 @@ const AdminCategories = () => {
   const handleDelete = async (categoryId, categoryName) => {
     if (window.confirm(`Are you sure you want to delete "${categoryName}"? This will affect all products in this category.`)) {
       try {
-        const response = await fetch(`http://localhost:3000/api/categories/${categoryId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-          }
+        await categoriesAPI.delete(categoryId)
+        setCategories(categories.filter(c => c._id !== categoryId))
+        toast.success('Category deleted successfully!', {
+          icon: '🗑️',
+          style: { background: '#ef4444', color: '#fff' }
         })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          setCategories(categories.filter(c => c._id !== categoryId))
-          toast.success('Category deleted successfully!', {
-            icon: '🗑️',
-            style: { background: '#ef4444', color: '#fff' }
-          })
-        } else {
-          toast.error(data.message || 'Failed to delete category')
-        }
       } catch (error) {
         console.error('Error deleting category:', error)
-        toast.error('Error deleting category')
+        toast.error(error.message || 'Error deleting category')
       }
     }
   }
@@ -65,16 +49,9 @@ const AdminCategories = () => {
 
   const handleToggleVisibility = async (categoryId, currentVisibility) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/categories/${categoryId}/visibility`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        }
-      })
+      const data = await categoriesAPI.updateVisibility(categoryId, !currentVisibility)
 
-      const data = await response.json()
-
-      if (response.ok && data.success) {
+      if (data.success) {
         // Update the category in the list
         setCategories(categories.map(c => 
           c._id === categoryId ? { ...c, isActive: !currentVisibility } : c

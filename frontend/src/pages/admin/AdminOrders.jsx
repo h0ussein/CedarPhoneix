@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { ordersAPI } from '../../utils/api'
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([])
@@ -16,12 +17,7 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/orders', {
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        }
-      })
-      const data = await response.json()
+      const data = await ordersAPI.getAll()
       if (data.success) {
         setOrders(data.data)
       }
@@ -35,41 +31,28 @@ const AdminOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        },
-        body: JSON.stringify({ orderStatus: newStatus })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Use the updated order data from the backend response
-        const updatedOrder = data.data || { ...orders.find(o => o._id === orderId), orderStatus: newStatus }
-        
-        // Update orders list
-        setOrders(orders.map(order => 
-          order._id === orderId ? updatedOrder : order
-        ))
-        
-        // Update selected order if it's the one being updated
-        if (selectedOrder && selectedOrder._id === orderId) {
-          setSelectedOrder(updatedOrder)
-        }
-        
-        toast.success(`Order status updated to ${newStatus}`, {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-      } else {
-        toast.error(data.message || 'Failed to update status')
+      const data = await ordersAPI.updateStatus(orderId, { orderStatus: newStatus })
+      
+      // Use the updated order data from the backend response
+      const updatedOrder = data.data || { ...orders.find(o => o._id === orderId), orderStatus: newStatus }
+      
+      // Update orders list
+      setOrders(orders.map(order => 
+        order._id === orderId ? updatedOrder : order
+      ))
+      
+      // Update selected order if it's the one being updated
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder(updatedOrder)
       }
+      
+      toast.success(`Order status updated to ${newStatus}`, {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
+      })
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error updating order status')
+      toast.error(error.message || 'Error updating order status')
     }
   }
 
@@ -99,35 +82,22 @@ const AdminOrders = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/api/orders/${selectedOrder._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-          },
-          body: JSON.stringify({ deliveryPrice: newDeliveryPrice })
+        await ordersAPI.updateStatus(selectedOrder._id, { deliveryPrice: newDeliveryPrice })
+        
+        // Update the order in the list and selected order
+        const updatedOrder = { ...selectedOrder, deliveryPrice: newDeliveryPrice, totalPrice: selectedOrder.itemsPrice + newDeliveryPrice }
+        setSelectedOrder(updatedOrder)
+        setOrders(orders.map(order => 
+          order._id === selectedOrder._id ? updatedOrder : order
+        ))
+        setEditingDeliveryPrice(false)
+        toast.success('Delivery price updated successfully', {
+          icon: '✅',
+          style: { background: '#10b981', color: '#fff' }
         })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          // Update the order in the list and selected order
-          const updatedOrder = { ...selectedOrder, deliveryPrice: newDeliveryPrice, totalPrice: selectedOrder.itemsPrice + newDeliveryPrice }
-          setSelectedOrder(updatedOrder)
-          setOrders(orders.map(order => 
-            order._id === selectedOrder._id ? updatedOrder : order
-          ))
-          setEditingDeliveryPrice(false)
-          toast.success('Delivery price updated successfully', {
-            icon: '✅',
-            style: { background: '#10b981', color: '#fff' }
-          })
-        } else {
-          toast.error(data.message || 'Failed to update delivery price')
-        }
       } catch (error) {
         console.error('Error:', error)
-        toast.error('Error updating delivery price')
+        toast.error(error.message || 'Error updating delivery price')
       }
     }
   }

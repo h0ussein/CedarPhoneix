@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
 import { removeFromWishlistSilent } from '../../utils/wishlist'
 import { getEffectivePrice, hasDiscount } from '../../utils/price'
+import { categoriesAPI, productsAPI } from '../../utils/api'
 
 const AdminProducts = () => {
   const navigate = useNavigate()
@@ -24,8 +25,7 @@ const AdminProducts = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/categories')
-      const data = await response.json()
+      const data = await categoriesAPI.getAll()
       if (data.success) {
         setCategories(data.data)
       }
@@ -40,15 +40,8 @@ const AdminProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      let url = 'http://localhost:3000/api/products'
-      
-      // Add category filter if a specific category is selected
-      if (selectedCategory !== 'all') {
-        url += `?category=${selectedCategory}`
-      }
-      
-      const response = await fetch(url)
-      const data = await response.json()
+      const params = selectedCategory !== 'all' ? { category: selectedCategory } : {}
+      const data = await productsAPI.getAll(params)
       if (data.success) {
         setProducts(data.data)
       }
@@ -63,29 +56,17 @@ const AdminProducts = () => {
   const handleDelete = async (productId, productName) => {
     if (window.confirm(`Are you sure you want to delete "${productName}"?`)) {
       try {
-        const response = await fetch(`http://localhost:3000/api/products/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-          }
+        await productsAPI.delete(productId)
+        setProducts(products.filter(p => p._id !== productId))
+        // Remove product from wishlist if it exists there
+        removeFromWishlistSilent(productId)
+        toast.success('Product deleted successfully!', {
+          icon: '🗑️',
+          style: { background: '#ef4444', color: '#fff' }
         })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          setProducts(products.filter(p => p._id !== productId))
-          // Remove product from wishlist if it exists there
-          removeFromWishlistSilent(productId)
-          toast.success('Product deleted successfully!', {
-            icon: '🗑️',
-            style: { background: '#ef4444', color: '#fff' }
-          })
-        } else {
-          toast.error(data.message || 'Failed to delete product')
-        }
       } catch (error) {
         console.error('Error deleting product:', error)
-        toast.error('Error deleting product')
+        toast.error(error.message || 'Error deleting product')
       }
     }
   }
@@ -96,17 +77,9 @@ const AdminProducts = () => {
 
   const handleToggleVisibility = async (productId, currentVisibility) => {
     try {
-      const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-      const response = await fetch(`http://localhost:3000/api/products/${productId}/visibility`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const data = await productsAPI.updateVisibility(productId, !currentVisibility)
 
-      const data = await response.json()
-
-      if (response.ok && data.success) {
+      if (data.success) {
         // Update the product in the list
         setProducts(products.map(p => 
           p._id === productId ? { ...p, isHidden: !currentVisibility } : p

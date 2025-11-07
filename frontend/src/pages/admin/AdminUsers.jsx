@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { usersAPI } from '../../utils/api'
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([])
@@ -13,12 +14,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/users', {
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        }
-      })
-      const data = await response.json()
+      const data = await usersAPI.getAll()
       if (data.success) {
         setUsers(data.data)
       }
@@ -32,58 +28,32 @@ const AdminUsers = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        },
-        body: JSON.stringify({ role: newRole })
+      await usersAPI.updateRole(userId, newRole)
+      setUsers(users.map(user => 
+        user._id === userId ? { ...user, role: newRole } : user
+      ))
+      toast.success(`User role updated to ${newRole}`, {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setUsers(users.map(user => 
-          user._id === userId ? { ...user, role: newRole } : user
-        ))
-        toast.success(`User role updated to ${newRole}`, {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-      } else {
-        toast.error(data.message || 'Failed to update role')
-      }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error updating user role')
+      toast.error(error.message || 'Error updating user role')
     }
   }
 
   const handleDeleteUser = async (userId, userName) => {
     if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
       try {
-        const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-          }
+        await usersAPI.delete(userId)
+        setUsers(users.filter(user => user._id !== userId))
+        toast.success('User deleted successfully!', {
+          icon: '🗑️',
+          style: { background: '#ef4444', color: '#fff' }
         })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          setUsers(users.filter(user => user._id !== userId))
-          toast.success('User deleted successfully!', {
-            icon: '🗑️',
-            style: { background: '#ef4444', color: '#fff' }
-          })
-        } else {
-          toast.error(data.message || 'Failed to delete user')
-        }
       } catch (error) {
         console.error('Error deleting user:', error)
-        toast.error('Error deleting user')
+        toast.error(error.message || 'Error deleting user')
       }
     }
   }

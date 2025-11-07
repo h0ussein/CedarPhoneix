@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
+import { usersAPI } from '../utils/api'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -30,23 +31,12 @@ const Login = () => {
     setError('')
 
     try {
-      const response = await fetch('http://localhost:3000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        login(data.data)
-        navigate('/account')
-      } else {
-        setError(data.message || 'Invalid email or password')
-      }
+      const data = await usersAPI.login(formData)
+      login(data.data)
+      navigate('/account')
     } catch (error) {
       console.error('Login error:', error)
-      setError('Login failed. Please try again.')
+      setError(error.message || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }

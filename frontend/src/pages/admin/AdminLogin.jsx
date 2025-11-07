@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { usersAPI } from '../../utils/api'
 
 const AdminLogin = () => {
   const navigate = useNavigate()
@@ -26,26 +27,17 @@ const AdminLogin = () => {
     setError('')
 
     try {
-      // In production, replace with actual API call
-      const response = await fetch('http://localhost:3000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
+      const data = await usersAPI.login(formData)
 
-      const data = await response.json()
-
-      if (response.ok && data.data.role === 'admin') {
+      if (data.data.role === 'admin') {
         login(data.data)
         navigate('/admin/dashboard')
-      } else if (response.ok && data.data.role !== 'admin') {
-        setError('Access denied. Admin privileges required.')
       } else {
-        setError(data.message || 'Invalid email or password')
+        setError('Access denied. Admin privileges required.')
       }
     } catch (error) {
       console.error('Login error:', error)
-      setError('Login failed. Please try again.')
+      setError(error.message || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }

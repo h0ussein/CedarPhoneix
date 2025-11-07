@@ -5,6 +5,7 @@ import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
+import { ordersAPI } from '../utils/api'
 
 const MyOrders = () => {
   const { user, isAuthenticated } = useAuth()
@@ -22,19 +23,7 @@ const MyOrders = () => {
         setRefreshing(true)
       }
       
-      const userToken = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-      if (!userToken) {
-        setLoading(false)
-        setRefreshing(false)
-        return
-      }
-
-      const response = await fetch('http://localhost:3000/api/orders/myorders', {
-        headers: {
-          'Authorization': `Bearer ${userToken}`
-        }
-      })
-      const data = await response.json()
+      const data = await ordersAPI.getMyOrders()
       
       if (data.success) {
         setOrders(data.data || [])

@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext'
 import { toggleWishlist, isInWishlist } from '../utils/wishlist'
 import { getEffectivePrice, hasDiscount, calculateDiscountedPrice } from '../utils/price'
 import toast from 'react-hot-toast'
+import { productsAPI } from '../utils/api'
 
 const ProductDetails = () => {
   const { id } = useParams()
@@ -26,8 +27,7 @@ const ProductDetails = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/products/${id}`)
-      const data = await response.json()
+      const data = await productsAPI.getById(id)
       
       if (data.success) {
         setProduct(data.data)

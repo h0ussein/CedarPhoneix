@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
+import { usersAPI } from '../utils/api'
 
 const Register = () => {
   const navigate = useNavigate()
@@ -44,28 +45,18 @@ const Register = () => {
       // Set phone to be the same as mobile number (with country code)
       const phone = formData.mobile ? `${formData.mobileCountryCode || '961'}${formData.mobile}` : ''
       
-      const response = await fetch('http://localhost:3000/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          phone: phone
-        })
+      const data = await usersAPI.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: phone
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        login(data.data)
-        navigate('/account')
-      } else {
-        setError(data.message || 'Registration failed')
-      }
+      login(data.data)
+      navigate('/account')
     } catch (error) {
       console.error('Registration error:', error)
-      setError('Registration failed. Please try again.')
+      setError(error.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }

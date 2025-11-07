@@ -5,6 +5,7 @@ import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { usersAPI, settingsAPI, productsAPI, ordersAPI } from '../utils/api'
 
 const Checkout = () => {
   const navigate = useNavigate()
@@ -32,20 +33,9 @@ const Checkout = () => {
     const fetchUserProfile = async () => {
       if (isAuthenticated() && !userDataLoaded) {
         try {
-          const userToken = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-          if (!userToken) return
+          const data = await usersAPI.getProfile()
 
-          const response = await fetch('http://localhost:3000/api/users/profile', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${userToken}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          const data = await response.json()
-
-          if (response.ok && data.success && data.data) {
+          if (data.success && data.data) {
             const userData = data.data
             
             // Split name into firstName and lastName
@@ -117,8 +107,7 @@ const Checkout = () => {
   const fetchDeliveryPrice = async () => {
     try {
       setLoadingDelivery(true)
-      const response = await fetch('http://localhost:3000/api/settings/delivery-price')
-      const data = await response.json()
+      const data = await settingsAPI.getDeliveryPrice()
       if (data.success) {
         setDeliveryPrice(data.defaultDeliveryPrice || 0)
       }
@@ -141,8 +130,7 @@ const Checkout = () => {
     setLoadingProduct(true)
     
     try {
-      const response = await fetch(`http://localhost:3000/api/products/${item._id}`)
-      const data = await response.json()
+      const data = await productsAPI.getById(item._id)
       
       if (data.success) {
         // Only allow editing if product has size or color options
@@ -241,36 +229,17 @@ const Checkout = () => {
         totalPrice: getCartTotal() + deliveryPrice
       }
 
-      // Include auth token if user is authenticated
-      const headers = { 'Content-Type': 'application/json' }
-      if (isAuthenticated()) {
-        const userToken = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-        if (userToken) {
-          headers['Authorization'] = `Bearer ${userToken}`
-        }
-      }
+      const data = await ordersAPI.create(orderData)
 
-      const response = await fetch('http://localhost:3000/api/orders', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(orderData)
+      clearCart()
+      toast.success('Order placed successfully! We will contact you soon.', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' },
+        duration: 4000
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        clearCart()
-        toast.success('Order placed successfully! We will contact you soon.', {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' },
-          duration: 4000
-        })
-        setTimeout(() => {
-          navigate('/')
-        }, 2000)
-      } else {
-        throw new Error(data.message || data.error || 'Failed to place order')
-      }
+      setTimeout(() => {
+        navigate('/')
+      }, 2000)
     } catch (error) {
       console.error('Order error:', error)
       toast.error(error.message || 'There was an error placing your order. Please try again.', {

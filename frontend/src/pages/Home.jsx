@@ -6,6 +6,7 @@ import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
 import { toggleWishlist, isInWishlist } from '../utils/wishlist'
 import { getEffectivePrice, hasDiscount } from '../utils/price'
+import { categoriesAPI, productsAPI } from '../utils/api'
 
 const Home = () => {
   const navigate = useNavigate()
@@ -23,8 +24,7 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/categories')
-      const data = await response.json()
+      const data = await categoriesAPI.getAll()
       if (data.success) {
         setCategories(data.data.slice(0, 8)) // Show max 8 categories
       }
@@ -37,8 +37,7 @@ const Home = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/products/featured')
-      const data = await response.json()
+      const data = await productsAPI.getFeatured()
       if (data.success) {
         setProducts(data.data)
       }

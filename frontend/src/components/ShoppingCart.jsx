@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { settingsAPI } from '../utils/api.js'
 
 const ShoppingCart = () => {
   const navigate = useNavigate()
@@ -24,8 +25,7 @@ const ShoppingCart = () => {
   const fetchDeliveryPrice = async () => {
     try {
       setLoadingDelivery(true)
-      const response = await fetch('http://localhost:3000/api/settings/delivery-price')
-      const data = await response.json()
+      const data = await settingsAPI.getDeliveryPrice()
       if (data.success) {
         setDeliveryPrice(data.defaultDeliveryPrice || 0)
       }

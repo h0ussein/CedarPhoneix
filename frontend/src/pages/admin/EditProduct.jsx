@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { categoriesAPI, productsAPI, apiClient } from '../../utils/api'
 
 const EditProduct = () => {
   const navigate = useNavigate()
@@ -41,8 +42,7 @@ const EditProduct = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/categories')
-      const data = await response.json()
+      const data = await categoriesAPI.getAll()
       if (data.success) {
         setCategories(data.data)
       }
@@ -53,8 +53,7 @@ const EditProduct = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/products/${id}`)
-      const data = await response.json()
+      const data = await productsAPI.getById(id)
       if (data.success) {
         const product = data.data
         setFormData({
@@ -187,31 +186,16 @@ const EditProduct = () => {
         fd.append('image', imageFile)
       }
 
-      const response = await fetch(`http://localhost:3000/api/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        },
-        body: fd
+      await apiClient.put(`/products/${id}`, fd)
+
+      toast.success('Product updated successfully!', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        toast.success('Product updated successfully!', {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-        navigate('/admin/products')
-      } else {
-        toast.error(data.message || 'Failed to update product', {
-          icon: '❌',
-          style: { background: '#ef4444', color: '#fff' }
-        })
-      }
+      navigate('/admin/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      toast.error('Error updating product')
+      toast.error(error.message || 'Error updating product')
     } finally {
       setLoading(false)
     }

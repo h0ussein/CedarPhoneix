@@ -4,6 +4,7 @@ import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
+import { categoriesAPI } from '../utils/api'
 
 const Categories = () => {
   const { toggleCart, getCartCount } = useCart()
@@ -16,8 +17,7 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/categories')
-      const data = await response.json()
+      const data = await categoriesAPI.getAll()
       if (data.success) {
         setCategories(data.data)
       }

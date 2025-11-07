@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { apiClient } from '../../utils/api'
 
 const AddCategory = () => {
   const navigate = useNavigate()
@@ -42,25 +43,13 @@ const AddCategory = () => {
       fd.append('description', formData.description)
       if (imageFile) fd.append('image', imageFile)
 
-      const response = await fetch('http://localhost:3000/api/categories', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        },
-        body: fd
+      await apiClient.post('/categories', fd)
+
+      toast.success('Category created successfully!', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        toast.success('Category created successfully!', {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-        navigate('/admin/categories')
-      } else {
-        toast.error(data.message || 'Failed to create category')
-      }
+      navigate('/admin/categories')
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error creating category')

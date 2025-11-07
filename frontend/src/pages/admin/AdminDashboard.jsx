@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
 import { useAuth } from '../../context/AuthContext'
+import { ordersAPI, productsAPI, usersAPI, settingsAPI } from '../../utils/api'
 
 const AdminDashboard = () => {
   const { user } = useAuth()
@@ -32,27 +33,15 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true)
-      const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
       
       // Fetch orders
-      const ordersResponse = await fetch('http://localhost:3000/api/orders', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      const ordersData = await ordersResponse.json()
+      const ordersData = await ordersAPI.getAll()
 
       // Fetch products
-      const productsResponse = await fetch('http://localhost:3000/api/products')
-      const productsData = await productsResponse.json()
+      const productsData = await productsAPI.getAll()
 
       // Fetch users
-      const usersResponse = await fetch('http://localhost:3000/api/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      const usersData = await usersResponse.json()
+      const usersData = await usersAPI.getAll()
 
       if (ordersData.success && productsData.success && usersData.success) {
         const recentOrdersList = ordersData.data.slice(0, 5)
@@ -85,13 +74,7 @@ const AdminDashboard = () => {
 
   const fetchSettings = async () => {
     try {
-      const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-      const response = await fetch('http://localhost:3000/api/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      const data = await response.json()
+      const data = await settingsAPI.getSettings()
       if (data.success) {
         setDefaultDeliveryPrice(data.data.defaultDeliveryPrice || 0)
         setDefaultDeliveryInput((data.data.defaultDeliveryPrice || 0).toString())
@@ -113,45 +96,28 @@ const AdminDashboard = () => {
 
     setSavingDefaultDelivery(true)
     try {
-      const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-      const response = await fetch('http://localhost:3000/api/settings/delivery-price', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          defaultDeliveryPrice: newPrice,
-          applyToAllOrders
-        })
-      })
+      const data = await settingsAPI.updateDeliveryPrice(newPrice, applyToAllOrders)
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setDefaultDeliveryPrice(newPrice)
-        setEditingDefaultDelivery(false)
-        setApplyToAllOrders(false)
-        toast.success(
-          applyToAllOrders 
-            ? 'Default delivery price updated and applied to all orders!'
-            : 'Default delivery price updated!',
-          {
-            icon: '✅',
-            style: { background: '#10b981', color: '#fff' },
-            duration: 4000
-          }
-        )
-        // Refresh stats if applied to all orders
-        if (applyToAllOrders) {
-          fetchDashboardStats()
+      setDefaultDeliveryPrice(newPrice)
+      setEditingDefaultDelivery(false)
+      setApplyToAllOrders(false)
+      toast.success(
+        applyToAllOrders 
+          ? 'Default delivery price updated and applied to all orders!'
+          : 'Default delivery price updated!',
+        {
+          icon: '✅',
+          style: { background: '#10b981', color: '#fff' },
+          duration: 4000
         }
-      } else {
-        toast.error(data.message || 'Failed to update default delivery price')
+      )
+      // Refresh stats if applied to all orders
+      if (applyToAllOrders) {
+        fetchDashboardStats()
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Error updating default delivery price')
+      toast.error(error.message || 'Error updating default delivery price')
     } finally {
       setSavingDefaultDelivery(false)
     }
@@ -169,53 +135,39 @@ const AdminDashboard = () => {
       }
 
       try {
-        const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-        const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ deliveryPrice: newDeliveryPrice })
+        const data = await ordersAPI.updateStatus(orderId, { deliveryPrice: newDeliveryPrice })
+
+        // Update the recent orders in stats
+        const updatedOrders = stats.recentOrders.map(order => {
+          if (order._id === orderId) {
+            const newTotal = order.itemsPrice + newDeliveryPrice
+            return { ...order, deliveryPrice: newDeliveryPrice, amount: newTotal }
+          }
+          return order
         })
 
-        const data = await response.json()
+        // Calculate new totals
+        const order = stats.recentOrders.find(o => o._id === orderId)
+        const oldDeliveryRevenue = order?.deliveryPrice || 0
+        const newDeliveryRevenue = stats.totalDeliveryRevenue - oldDeliveryRevenue + newDeliveryPrice
+        const oldTotalRevenue = stats.totalRevenue
+        const newTotalRevenue = oldTotalRevenue - order.amount + (order.itemsPrice + newDeliveryPrice)
 
-        if (response.ok) {
-          // Update the recent orders in stats
-          const updatedOrders = stats.recentOrders.map(order => {
-            if (order._id === orderId) {
-              const newTotal = order.itemsPrice + newDeliveryPrice
-              return { ...order, deliveryPrice: newDeliveryPrice, amount: newTotal }
-            }
-            return order
-          })
-
-          // Calculate new totals
-          const order = stats.recentOrders.find(o => o._id === orderId)
-          const oldDeliveryRevenue = order?.deliveryPrice || 0
-          const newDeliveryRevenue = stats.totalDeliveryRevenue - oldDeliveryRevenue + newDeliveryPrice
-          const oldTotalRevenue = stats.totalRevenue
-          const newTotalRevenue = oldTotalRevenue - order.amount + (order.itemsPrice + newDeliveryPrice)
-
-          setStats({
-            ...stats,
-            recentOrders: updatedOrders,
-            totalDeliveryRevenue: newDeliveryRevenue,
-            totalRevenue: newTotalRevenue
-          })
-          setEditingDeliveryId(null)
-          setDeliveryPriceInput('')
-          toast.success('Delivery price updated successfully', {
-            icon: '✅',
-            style: { background: '#10b981', color: '#fff' }
-          })
-        } else {
-          toast.error(data.message || 'Failed to update delivery price')
-        }
+        setStats({
+          ...stats,
+          recentOrders: updatedOrders,
+          totalDeliveryRevenue: newDeliveryRevenue,
+          totalRevenue: newTotalRevenue
+        })
+        setEditingDeliveryId(null)
+        setDeliveryPriceInput('')
+        toast.success('Delivery price updated successfully', {
+          icon: '✅',
+          style: { background: '#10b981', color: '#fff' }
+        })
       } catch (error) {
         console.error('Error:', error)
-        toast.error('Error updating delivery price')
+        toast.error(error.message || 'Error updating delivery price')
       }
     }
   }

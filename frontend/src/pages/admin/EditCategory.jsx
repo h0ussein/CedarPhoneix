@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { categoriesAPI, apiClient } from '../../utils/api'
 
 const EditCategory = () => {
   const navigate = useNavigate()
@@ -23,8 +24,7 @@ const EditCategory = () => {
 
   const fetchCategory = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/categories/${id}`)
-      const data = await response.json()
+      const data = await categoriesAPI.getById(id)
       if (data.success) {
         const category = data.data
         setFormData({
@@ -74,25 +74,13 @@ const EditCategory = () => {
       fd.append('isActive', String(formData.isActive))
       if (imageFile) fd.append('image', imageFile)
 
-      const response = await fetch(`http://localhost:3000/api/categories/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token}`
-        },
-        body: fd
+      await apiClient.put(`/categories/${id}`, fd)
+
+      toast.success('Category updated successfully!', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        toast.success('Category updated successfully!', {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-        navigate('/admin/categories')
-      } else {
-        toast.error(data.message || 'Failed to update category')
-      }
+      navigate('/admin/categories')
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error updating category')

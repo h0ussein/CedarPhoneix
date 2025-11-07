@@ -6,6 +6,7 @@ import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
 import { toggleWishlist, isInWishlist } from '../utils/wishlist'
 import { getEffectivePrice, hasDiscount } from '../utils/price'
+import { categoriesAPI, productsAPI } from '../utils/api'
 
 const CategoryProducts = () => {
   const { slug } = useParams()
@@ -33,15 +34,13 @@ const CategoryProducts = () => {
   const fetchCategoryAndProducts = async () => {
     try {
       // Fetch category by slug
-      const categoryResponse = await fetch(`http://localhost:3000/api/categories/slug/${slug}`)
-      const categoryData = await categoryResponse.json()
+      const categoryData = await categoriesAPI.getBySlug(slug)
       
       if (categoryData.success) {
         setCategory(categoryData.data)
         
         // Fetch products for this category
-        const productsResponse = await fetch(`http://localhost:3000/api/products?category=${categoryData.data._id}`)
-        const productsData = await productsResponse.json()
+        const productsData = await productsAPI.getAll({ category: categoryData.data._id })
         
         if (productsData.success) {
           setProducts(productsData.data)

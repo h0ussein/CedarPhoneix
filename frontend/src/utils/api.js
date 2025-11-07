@@ -1,35 +1,66 @@
-// API base URL - update this to match your backend
-const API_BASE_URL = 'http://localhost:3000/api'
+import axios from 'axios'
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const user = JSON.parse(localStorage.getItem('cedar_phoenix_user') || '{}')
-  return {
-    'Content-Type': 'application/json',
-    ...(user.token && { Authorization: `Bearer ${user.token}` })
+// API base URL - update this to match your backend
+const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3001/api" : "/api";
+
+// Create axios instance
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
   }
-}
+})
+
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    // Add auth token
+    try {
+      const userStr = localStorage.getItem('cedar_phoenix_user')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        if (user && user.token) {
+          config.headers.Authorization = `Bearer ${user.token}`
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing user from localStorage:', error)
+    }
+    
+    // Remove Content-Type header for FormData (axios will set it automatically with boundary)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+    
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    const message = error.response?.data?.message || error.message || 'API request failed'
+    console.error('API Error:', message)
+    return Promise.reject(new Error(message))
+  }
+)
 
 // Generic API call function
 const apiCall = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers
-      }
+    const response = await apiClient({
+      url: endpoint,
+      method: options.method || 'GET',
+      data: options.body ? JSON.parse(options.body) : undefined,
+      params: options.params,
+      headers: options.headers
     })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || 'API request failed')
-    }
-
-    return data
+    return response
   } catch (error) {
-    console.error('API Error:', error)
     throw error
   }
 }
@@ -37,8 +68,7 @@ const apiCall = async (endpoint, options = {}) => {
 // Products API
 export const productsAPI = {
   getAll: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString()
-    return apiCall(`/products?${queryString}`)
+    return apiCall('/products', { params })
   },
   getById: (id) => apiCall(`/products/${id}`),
   getFeatured: () => apiCall('/products/featured'),
@@ -54,12 +84,22 @@ export const productsAPI = {
     method: 'PUT',
     body: JSON.stringify(productData)
   }),
-  delete: (id) => apiCall(`/products/${id}`, { method: 'DELETE' })
+  delete: (id) => apiCall(`/products/${id}`, { method: 'DELETE' }),
+  updateVisibility: (id, isVisible) => apiCall(`/products/${id}/visibility`, {
+    method: 'PUT',
+    body: JSON.stringify({ isVisible })
+  }),
+  getRelated: (id) => apiCall(`/products/${id}/related`),
+  updateRelated: (id, relatedProductIds) => apiCall(`/products/${id}/related`, {
+    method: 'PUT',
+    body: JSON.stringify({ relatedProductIds })
+  })
 }
 
 // Categories API
 export const categoriesAPI = {
   getAll: () => apiCall('/categories'),
+  getAllAdmin: () => apiCall('/categories/admin/all'),
   getById: (id) => apiCall(`/categories/${id}`),
   getBySlug: (slug) => apiCall(`/categories/slug/${slug}`),
   create: (categoryData) => apiCall('/categories', {
@@ -70,7 +110,11 @@ export const categoriesAPI = {
     method: 'PUT',
     body: JSON.stringify(categoryData)
   }),
-  delete: (id) => apiCall(`/categories/${id}`, { method: 'DELETE' })
+  delete: (id) => apiCall(`/categories/${id}`, { method: 'DELETE' }),
+  updateVisibility: (id, isVisible) => apiCall(`/categories/${id}/visibility`, {
+    method: 'PUT',
+    body: JSON.stringify({ isVisible })
+  })
 }
 
 // Orders API
@@ -112,10 +156,24 @@ export const usersAPI = {
   })
 }
 
+// Settings API
+export const settingsAPI = {
+  getDeliveryPrice: () => apiCall('/settings/delivery-price'),
+  getSettings: () => apiCall('/settings'),
+  updateDeliveryPrice: (price, applyToAll = false) => apiCall('/settings/delivery-price', {
+    method: 'PUT',
+    body: JSON.stringify({ defaultDeliveryPrice: price, applyToAll })
+  })
+}
+
+// Export apiClient for direct use (e.g., FormData uploads)
+export { apiClient }
+
 export default {
   products: productsAPI,
   categories: categoriesAPI,
   orders: ordersAPI,
-  users: usersAPI
+  users: usersAPI,
+  settings: settingsAPI
 }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { categoriesAPI } from '../utils/api'
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -17,8 +18,7 @@ const NavBar = () => {
     // Fetch categories from API
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/categories')
-        const data = await response.json()
+        const data = await categoriesAPI.getAll()
         if (data.success) {
           setCategories(data.data)
         }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { productsAPI } from '../../utils/api'
 
 const AdminRelatedProducts = () => {
   const navigate = useNavigate()
@@ -25,15 +26,13 @@ const AdminRelatedProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/products')
-      const data = await response.json()
+      const data = await productsAPI.getAll()
       if (data.success) {
         // Fetch full details for each product to get related products
         const productsWithRelated = await Promise.all(
           data.data.map(async (product) => {
             try {
-              const detailResponse = await fetch(`http://localhost:3000/api/products/${product._id}`)
-              const detailData = await detailResponse.json()
+              const detailData = await productsAPI.getById(product._id)
               return detailData.success ? detailData.data : product
             } catch {
               return product
@@ -75,35 +74,21 @@ const AdminRelatedProducts = () => {
 
     setSaving(true)
     try {
-      const token = JSON.parse(localStorage.getItem('cedar_phoenix_user'))?.token
-      const response = await fetch(`http://localhost:3000/api/products/${selectedProduct._id}/related`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          relatedProductIds: selectedRelatedIds
-        })
+      const data = await productsAPI.updateRelated(selectedProduct._id, selectedRelatedIds)
+
+      toast.success('Related products updated successfully!', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' }
       })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        toast.success('Related products updated successfully!', {
-          icon: '✅',
-          style: { background: '#10b981', color: '#fff' }
-        })
-        // Refresh products to get updated data
-        await fetchProducts()
-        // Update selected product
+      // Refresh products to get updated data
+      await fetchProducts()
+      // Update selected product
+      if (data.data) {
         setSelectedProduct(data.data)
-      } else {
-        toast.error(data.message || 'Failed to update related products')
       }
     } catch (error) {
       console.error('Error updating related products:', error)
-      toast.error('Error updating related products')
+      toast.error(error.message || 'Error updating related products')
     } finally {
       setSaving(false)
     }

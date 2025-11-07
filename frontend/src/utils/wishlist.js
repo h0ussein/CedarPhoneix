@@ -78,8 +78,8 @@ export const cleanupWishlist = async (existingProductIds = []) => {
   if (existingProductIds.length === 0) {
     // Fetch all product IDs from API if not provided
     try {
-      const response = await fetch('http://localhost:3000/api/products')
-      const data = await response.json()
+      const { productsAPI } = await import('./api')
+      const data = await productsAPI.getAll()
       if (data.success) {
         existingProductIds = data.data.map(p => p._id)
       }
