@@ -3,6 +3,8 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import conn from './src/config/db.js'
 import errorHandler from './src/middleware/errorHandler.js'
+import path from 'path'
+
 
 // Import routes
 import productRoutes from './src/routes/productRoutes.js'
@@ -12,12 +14,16 @@ import userRoutes from './src/routes/userRoutes.js'
 import settingsRoutes from './src/routes/settingsRoutes.js'
 
 dotenv.config()
+const __dirname = path.resolve();
 
 const app = express()
-const port = process.env.PORT || 3000
+const port = process.env.PORT 
+console.log(port)
 
 // Middleware
-app.use(cors())
+if(process.env.NODE_ENV !== 'production'){
+  app.use(cors())
+} 
 app.use(express.json({ limit: '50mb' }))  // Increased limit for base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
@@ -28,10 +34,18 @@ app.use('/api/categories', categoryRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/settings', settingsRoutes)
-
-
 // Error handler
 app.use(errorHandler)
+
+if(process.env.NODE_ENV === 'production'){
+  app.use(express.static(path.join(__dirname, '../frontend/dist')))
+
+  app.get((req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend","dist","index.html"))
+})
+
+}
+
 
 // Connect to database and start server
 conn().then(() => {
