@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import cedarIcon from '../assets/cedar.png'
 
 const AdminLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -37,7 +38,10 @@ const AdminLayout = ({ children }) => {
       {/* Admin Sidebar */}
       <aside className={`fixed top-0 left-0 h-screen w-56 bg-white shadow-2xl z-50 transition-transform duration-300 lg:translate-x-0 border-r border-gray-200 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between px-4 py-4 border-b-2 border-emerald-700/30 bg-gradient-to-r from-emerald-700 to-teal-600 flex-shrink-0">
-          <h2 className="text-lg font-bold text-white">Admin Panel</h2>
+          <div className="flex items-center gap-2">
+            <img src={cedarIcon} alt="Cedar Phoenix Logo" className="w-6 h-6 flex-shrink-0" style={{ display: 'block' }} />
+            <h2 className="text-lg font-bold text-white leading-none">Admin Panel</h2>
+          </div>
           <button 
             className="lg:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-colors" 
             onClick={toggleSidebar}
@@ -113,8 +117,9 @@ const AdminLayout = ({ children }) => {
                   <path d="M3 12h18M3 6h18M3 18h18" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </button>
-              <Link to="/" className="text-lg md:text-xl lg:text-xl font-bold bg-gradient-to-r from-emerald-600 to-amber-500 bg-clip-text text-transparent no-underline">
-                Cedar Phoenix Admin
+              <Link to="/" className="flex items-center gap-2 text-lg md:text-xl lg:text-xl font-bold bg-gradient-to-r from-emerald-600 to-amber-500 bg-clip-text text-transparent no-underline">
+                <span className="bg-gradient-to-r from-emerald-600 to-amber-500 bg-clip-text text-transparent">Cedar Phoenix Admin</span>
+                <img src={cedarIcon} alt="Cedar Phoenix Logo" className="w-6 h-6 md:w-7 md:h-7 flex-shrink-0" style={{ display: 'block' }} />
               </Link>
             </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { categoriesAPI } from '../utils/api'
+import cedarIcon from '../assets/cedar.png'
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -48,7 +49,10 @@ const NavBar = () => {
       {/* Sidebar */}
       <div className={`fixed top-0 left-0 w-80 max-w-[85vw] h-screen bg-white shadow-2xl z-[2000] overflow-y-auto transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between px-6 py-6 border-b-2 border-emerald-700/30 bg-gradient-to-r from-emerald-700 to-teal-600">
-          <h2 className="text-2xl font-bold text-white drop-shadow-md">Cedar Phoenix</h2>
+          <div className="flex items-center gap-3">
+            <img src={cedarIcon} alt="Cedar Phoenix Logo" className="w-8 h-8 flex-shrink-0" style={{ display: 'block' }} />
+            <h2 className="text-2xl font-bold text-white drop-shadow-md leading-none">Cedar Phoenix</h2>
+          </div>
           <button 
             className="p-2 text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors" 
             onClick={toggleSidebar}
@@ -110,8 +114,9 @@ const NavBar = () => {
                 <path d="M3 12h18M3 6h18M3 18h18" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
-            <Link to="/" className="no-underline flex items-center">
-              <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-amber-500 bg-clip-text text-transparent tracking-tight">Cedar Phoenix</span>
+            <Link to="/" className="no-underline flex items-center gap-2 md:gap-3">
+              <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-amber-500 bg-clip-text text-transparent tracking-tight leading-none">Cedar Phoenix</span>
+              <img src={cedarIcon} alt="Cedar Phoenix Logo" className="w-7 h-7 md:w-8 md:h-8 flex-shrink-0" style={{ display: 'block' }} />
             </Link>
           </div>
 
