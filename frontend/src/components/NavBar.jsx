@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { categoriesAPI } from '../utils/api'
-import cedarIcon from '../assets/cedar.png'
+import cedarIcon from '../assets/cedar1.png'
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
