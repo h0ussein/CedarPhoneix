@@ -4,11 +4,16 @@ import nodemailer from 'nodemailer';
 // @route   POST /api/contact
 // @access  Public
 export const sendContactMessage = async (req, res) => {
-  console.log('=== Contact Form Submission Started ===');
-  console.log('Request body:', { name, email: email ? `${email.substring(0, 3)}***` : 'missing', subject, messageLength: message?.length });
-  
   try {
     const { name, email, subject, message } = req.body;
+    
+    console.log('=== Contact Form Submission Started ===');
+    console.log('Request body:', { 
+      name: name || 'missing', 
+      email: email ? `${email.substring(0, 3)}***` : 'missing', 
+      subject: subject || 'missing', 
+      messageLength: message?.length || 0 
+    });
 
     // Validate required fields
     if (!name || !email || !subject || !message) {
