@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/h0ussein/CedarPhoneix#readme",
   "dependencies": {
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.10",
+    "resend": "^6.5.2"
   }
 }
