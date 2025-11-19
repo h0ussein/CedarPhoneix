@@ -6,6 +6,7 @@ import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI, settingsAPI, productsAPI, ordersAPI } from '../utils/api'
+import { parsePhoneNumber, combinePhoneNumber, COUNTRY_CODES, DEFAULT_COUNTRY_CODE } from '../utils/phoneUtils'
 
 const Checkout = () => {
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ const Checkout = () => {
   const [selectedColor, setSelectedColor] = useState('')
   const [loadingProduct, setLoadingProduct] = useState(false)
   const [formData, setFormData] = useState({
-    firstName: '', lastName: '', email: '', mobile: '', mobileCountryCode: '961', phone: '', address: '', city: '', state: '', zipCode: '', country: 'Lebanon'
+    firstName: '', lastName: '', email: '', mobile: '', mobileCountryCode: DEFAULT_COUNTRY_CODE, phone: '', address: '', city: '', state: '', zipCode: '', country: 'Lebanon'
   })
   const [userDataLoaded, setUserDataLoaded] = useState(false)
 
@@ -47,35 +48,8 @@ const Checkout = () => {
               lastName = nameParts.slice(1).join(' ') || ''
             }
 
-            // Parse phone number (format: "9611234567" or similar)
-            let mobileCountryCode = '961'
-            let mobile = ''
-            if (userData.phone) {
-              const phoneStr = userData.phone.toString().trim().replace(/[^\d]/g, '') // Remove non-digits
-              
-              // Try to extract country code based on common patterns
-              if (phoneStr.startsWith('961') && phoneStr.length >= 10) {
-                // Lebanon: 961 + 7-8 digits
-                mobileCountryCode = '961'
-                mobile = phoneStr.substring(3)
-              } else if (phoneStr.startsWith('1') && phoneStr.length === 11) {
-                // US/Canada: 1 + 10 digits
-                mobileCountryCode = '1'
-                mobile = phoneStr.substring(1)
-              } else if (phoneStr.startsWith('44') && phoneStr.length >= 12) {
-                // UK: 44 + 10 digits
-                mobileCountryCode = '44'
-                mobile = phoneStr.substring(2)
-              } else if (phoneStr.length >= 10) {
-                // Default: assume first 3 digits are country code, rest is mobile
-                // Common country codes are 3 digits (e.g., 961, 212, 213, etc.)
-                mobileCountryCode = phoneStr.substring(0, 3)
-                mobile = phoneStr.substring(3)
-              } else {
-                // If phone is too short, assume it's just the mobile number
-                mobile = phoneStr
-              }
-            }
+            // Parse phone number using utility function
+            const parsedPhone = parsePhoneNumber(userData.phone)
 
             // Auto-fill form with user data
             setFormData(prev => ({
@@ -83,8 +57,8 @@ const Checkout = () => {
               firstName: firstName || prev.firstName,
               lastName: lastName || prev.lastName,
               email: userData.email || prev.email,
-              mobile: mobile || prev.mobile,
-              mobileCountryCode: mobileCountryCode || prev.mobileCountryCode,
+              mobile: parsedPhone.mobile || prev.mobile,
+              mobileCountryCode: parsedPhone.mobileCountryCode || prev.mobileCountryCode,
               address: userData.address?.street || prev.address,
               city: userData.address?.city || prev.city,
               state: userData.address?.state || prev.state,
@@ -205,8 +179,8 @@ const Checkout = () => {
     try {
       // Combine firstName and lastName into name for backend compatibility
       const name = `${formData.firstName} ${formData.lastName}`.trim()
-      // Set phone to be the same as mobile number (with country code)
-      const phone = formData.mobile ? `${formData.mobileCountryCode || '961'}${formData.mobile}` : ''
+      // Combine country code and mobile number
+      const phone = combinePhoneNumber(formData.mobileCountryCode, formData.mobile)
       
       const orderData = {
         orderItems: cartItems.map(item => ({
@@ -304,9 +278,21 @@ const Checkout = () => {
               <div className="mb-6">
                 <label className="block font-semibold text-gray-800 mb-2">Phone Number *</label>
                 <div className="flex gap-2">
-                  <div className="relative w-28">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600">+</span>
-                    <input type="text" name="mobileCountryCode" value={formData.mobileCountryCode} onChange={handleChange} required className="w-full pl-6 pr-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" placeholder="961" />
+                  <div className="relative w-32">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 z-10">+</span>
+                    <select
+                      name="mobileCountryCode"
+                      value={formData.mobileCountryCode}
+                      onChange={handleChange}
+                      required
+                      className="w-full pl-6 pr-8 py-3 border-2 border-gray-200 rounded-lg text-base transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 appearance-none cursor-pointer"
+                    >
+                      {COUNTRY_CODES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.code}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex-1">
                     <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" placeholder="Phone number" />

@@ -5,53 +5,54 @@ import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
-
-// Parse existing phone number to extract country code and mobile number
-const parsePhoneNumber = (phone) => {
-  if (!phone) return { mobile: '', mobileCountryCode: '961' }
-  
-  // Check if phone starts with country code (e.g., 9611234567)
-  const phoneStr = phone.replace(/^\+/, '') // Remove leading +
-  if (phoneStr.startsWith('961')) {
-    return {
-      mobile: phoneStr.substring(3),
-      mobileCountryCode: '961'
-    }
-  }
-  // If no country code detected, assume it's just the mobile number
-  return {
-    mobile: phoneStr,
-    mobileCountryCode: '961'
-  }
-}
+import { usersAPI } from '../utils/api'
+import { parsePhoneNumber, combinePhoneNumber, formatPhoneNumber, COUNTRY_CODES, DEFAULT_COUNTRY_CODE } from '../utils/phoneUtils'
+import toast from 'react-hot-toast'
 
 const Account = () => {
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated } = useAuth()
+  const { user, logout, isAuthenticated, updateUser } = useAuth()
   const { toggleCart, getCartCount } = useCart()
   const [isEditing, setIsEditing] = useState(false)
+  const [userProfile, setUserProfile] = useState(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
   
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     mobile: '',
-    mobileCountryCode: '961',
+    mobileCountryCode: DEFAULT_COUNTRY_CODE,
     phone: ''
   })
+  const [loading, setLoading] = useState(false)
 
-  // Update form data when user data is loaded
+  // Fetch full user profile from API (includes phone number)
   useEffect(() => {
-    if (user) {
-      const parsedPhone = parsePhoneNumber(user.phone)
-      setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        mobile: parsedPhone.mobile,
-        mobileCountryCode: parsedPhone.mobileCountryCode,
-        phone: user.phone || ''
-      })
+    const fetchUserProfile = async () => {
+      if (isAuthenticated()) {
+        try {
+          setLoadingProfile(true)
+          const data = await usersAPI.getProfile()
+          if (data.success && data.data) {
+            setUserProfile(data.data)
+            const parsedPhone = parsePhoneNumber(data.data.phone)
+            setFormData({
+              name: data.data.name || '',
+              email: data.data.email || '',
+              mobile: parsedPhone.mobile,
+              mobileCountryCode: parsedPhone.mobileCountryCode,
+              phone: data.data.phone || ''
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error)
+        } finally {
+          setLoadingProfile(false)
+        }
+      }
     }
-  }, [user])
+    fetchUserProfile()
+  }, [isAuthenticated])
 
   const handleChange = (e) => {
     setFormData({
@@ -62,13 +63,37 @@ const Account = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // Set phone to be the same as mobile number (with country code)
-    const phone = formData.mobile ? `${formData.mobileCountryCode || '961'}${formData.mobile}` : ''
+    setLoading(true)
     
-    // In production, call API to update profile
-    // The phone field should be updated with the combined value
-    alert('Profile updated successfully!')
-    setIsEditing(false)
+    try {
+      // Combine country code and mobile number
+      const phone = combinePhoneNumber(formData.mobileCountryCode, formData.mobile)
+      
+      // Update profile via API
+      const response = await usersAPI.updateProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: phone
+      })
+      
+      if (response.success) {
+        // Update the user profile state
+        setUserProfile(response.data)
+        // Update auth context with new user data
+        updateUser({ ...user, ...response.data })
+        
+        toast.success('Profile updated successfully!', {
+          icon: '✅',
+          style: { background: '#10b981', color: '#fff' }
+        })
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast.error(error.message || 'Failed to update profile')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
@@ -114,13 +139,13 @@ const Account = () => {
           {/* Sidebar Menu */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="text-center mb-6 pb-6 border-b-2 border-gray-200">
-                <div className="w-20 h-20 bg-gradient-to-r from-black to-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold">
-                  {user?.name?.charAt(0).toUpperCase()}
+                <div className="text-center mb-6 pb-6 border-b-2 border-gray-200">
+                  <div className="w-20 h-20 bg-gradient-to-r from-black to-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold">
+                    {(userProfile?.name || user?.name)?.charAt(0).toUpperCase()}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">{userProfile?.name || user?.name}</h3>
+                  <p className="text-sm text-gray-600">{userProfile?.email || user?.email}</p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">{user?.name}</h3>
-                <p className="text-sm text-gray-600">{user?.email}</p>
-              </div>
 
               <nav className="space-y-2">
                 <Link to="/account" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-100 text-black font-medium transition-all no-underline">
@@ -147,7 +172,7 @@ const Account = () => {
             <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
-                {!isEditing && (
+                {!isEditing && !loadingProfile && (
                   <button 
                     onClick={() => setIsEditing(true)}
                     className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-600 hover:shadow-lg transition-all border-none cursor-pointer"
@@ -157,7 +182,12 @@ const Account = () => {
                 )}
               </div>
 
-              {isEditing ? (
+              {loadingProfile ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-emerald-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading profile...</p>
+                </div>
+              ) : isEditing ? (
                 <form onSubmit={handleSubmit}>
                   <div className="mb-5">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
@@ -186,16 +216,20 @@ const Account = () => {
                   <div className="mb-6">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
                     <div className="flex gap-2">
-                      <div className="relative w-28">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600">+</span>
-                        <input
-                          type="text"
+                      <div className="relative w-32">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 z-10">+</span>
+                        <select
                           name="mobileCountryCode"
                           value={formData.mobileCountryCode}
                           onChange={handleChange}
-                          placeholder="961"
-                          className="w-full pl-6 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-800 transition-all focus:outline-none focus:border-black focus:bg-white"
-                        />
+                          className="w-full pl-6 pr-8 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-800 transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 focus:bg-white appearance-none cursor-pointer"
+                        >
+                          {COUNTRY_CODES.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex-1">
                         <input
@@ -213,9 +247,10 @@ const Account = () => {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold py-3 rounded-lg hover:from-emerald-700 hover:to-teal-600 hover:shadow-lg transition-all border-none cursor-pointer"
+                      disabled={loading}
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold py-3 rounded-lg hover:from-emerald-700 hover:to-teal-600 hover:shadow-lg transition-all border-none cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      Save Changes
+                      {loading ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button
                       type="button"
@@ -230,19 +265,17 @@ const Account = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Name</p>
-                    <p className="text-lg font-semibold text-gray-800">{user?.name}</p>
+                    <p className="text-lg font-semibold text-gray-800">{userProfile?.name || user?.name}</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Email</p>
-                    <p className="text-lg font-semibold text-gray-800">{user?.email}</p>
+                    <p className="text-lg font-semibold text-gray-800">{userProfile?.email || user?.email}</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Phone</p>
-                    <p className="text-lg font-semibold text-gray-800">{user?.phone || 'Not provided'}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Account Type</p>
-                    <p className="text-lg font-semibold text-gray-800 capitalize">{user?.role}</p>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {userProfile?.phone ? formatPhoneNumber(userProfile.phone) : 'Not provided'}
+                    </p>
                   </div>
                 </div>
               )}

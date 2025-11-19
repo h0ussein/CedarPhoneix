@@ -296,7 +296,7 @@ const MyOrders = () => {
                             <p>
                               <span className="font-semibold">Phone:</span> {
                                 order.shippingInfo?.mobile 
-                                  ? `+${order.shippingInfo?.mobileCountryCode || '961'}${order.shippingInfo.mobile}`
+                                  ? `+${order.shippingInfo?.mobileCountryCode || '961'} ${order.shippingInfo.mobile}`
                                   : order.shippingInfo.phone
                               }
                             </p>

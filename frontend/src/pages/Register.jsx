@@ -5,6 +5,7 @@ import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
 import { usersAPI } from '../utils/api'
+import { combinePhoneNumber, COUNTRY_CODES, DEFAULT_COUNTRY_CODE } from '../utils/phoneUtils'
 
 const Register = () => {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     mobile: '',
-    mobileCountryCode: '961',
+    mobileCountryCode: DEFAULT_COUNTRY_CODE,
     phone: ''
   })
   const [error, setError] = useState('')
@@ -42,8 +43,8 @@ const Register = () => {
     }
 
     try {
-      // Set phone to be the same as mobile number (with country code)
-      const phone = formData.mobile ? `${formData.mobileCountryCode || '961'}${formData.mobile}` : ''
+      // Combine country code and mobile number
+      const phone = combinePhoneNumber(formData.mobileCountryCode, formData.mobile)
       
       const data = await usersAPI.register({
         name: formData.name,
@@ -110,17 +111,21 @@ const Register = () => {
             <div className="mb-5">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
               <div className="flex gap-2">
-                <div className="relative w-28">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600">+</span>
-                  <input
-                    type="text"
+                <div className="relative w-32">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 z-10">+</span>
+                  <select
                     name="mobileCountryCode"
                     value={formData.mobileCountryCode}
                     onChange={handleChange}
                     required
-                    placeholder="961"
-                    className="w-full pl-6 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-800 placeholder-gray-500 transition-all focus:outline-none focus:border-black focus:bg-white"
-                  />
+                    className="w-full pl-6 pr-8 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-800 transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 focus:bg-white appearance-none cursor-pointer"
+                  >
+                    {COUNTRY_CODES.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.flag} {country.code}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex-1">
                   <input

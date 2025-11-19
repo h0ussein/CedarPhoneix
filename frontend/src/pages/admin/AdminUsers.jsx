@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import { formatPhoneNumber } from '../../utils/phoneUtils'
 import { usersAPI } from '../../utils/api'
 
 const AdminUsers = () => {
@@ -28,14 +29,19 @@ const AdminUsers = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      await usersAPI.updateRole(userId, newRole)
-      setUsers(users.map(user => 
-        user._id === userId ? { ...user, role: newRole } : user
-      ))
-      toast.success(`User role updated to ${newRole}`, {
-        icon: '✅',
-        style: { background: '#10b981', color: '#fff' }
-      })
+      const data = await usersAPI.updateRole(userId, newRole)
+      
+      if (data.success) {
+        setUsers(users.map(user => 
+          user._id === userId ? { ...user, role: newRole } : user
+        ))
+        toast.success(`User role updated to ${newRole}`, {
+          icon: '✅',
+          style: { background: '#10b981', color: '#fff' }
+        })
+      } else {
+        toast.error(data.message || 'Failed to update role')
+      }
     } catch (error) {
       console.error('Error:', error)
       toast.error(error.message || 'Error updating user role')
@@ -45,12 +51,19 @@ const AdminUsers = () => {
   const handleDeleteUser = async (userId, userName) => {
     if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
       try {
-        await usersAPI.delete(userId)
-        setUsers(users.filter(user => user._id !== userId))
-        toast.success('User deleted successfully!', {
-          icon: '🗑️',
-          style: { background: '#ef4444', color: '#fff' }
-        })
+        const data = await usersAPI.delete(userId)
+        
+        if (data.success) {
+          setUsers(users.filter(user => user._id !== userId))
+          toast.success('User deleted successfully!', {
+            icon: '🗑️',
+            style: { background: '#ef4444', color: '#fff' }
+          })
+          // Refresh the user list to ensure consistency
+          await fetchUsers()
+        } else {
+          toast.error(data.message || 'Failed to delete user')
+        }
       } catch (error) {
         console.error('Error deleting user:', error)
         toast.error(error.message || 'Error deleting user')
@@ -72,37 +85,37 @@ const AdminUsers = () => {
 
   return (
     <AdminLayout>
-      <div className="mb-5">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Manage Users</h1>
-        <p className="text-base text-gray-600 mb-4">View and manage user accounts</p>
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Manage Users</h1>
+        <p className="text-lg text-gray-600 mb-6">View and manage user accounts</p>
         
         {/* User Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <div className="bg-white p-4 rounded-xl shadow-md">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Total Users</p>
-                <p className="text-xl font-bold text-gray-800">{stats.total}</p>
+                <p className="text-sm font-semibold text-gray-600 uppercase">Total Users</p>
+                <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
               </div>
-              <div className="text-2xl">👥</div>
+              <div className="text-3xl">👥</div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-md">
+          <div className="bg-white p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Administrators</p>
-                <p className="text-xl font-bold text-black">{stats.admins}</p>
+                <p className="text-sm font-semibold text-gray-600 uppercase">Administrators</p>
+                <p className="text-2xl font-bold text-black">{stats.admins}</p>
               </div>
-              <div className="text-2xl">👨‍💼</div>
+              <div className="text-3xl">👨‍💼</div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-md">
+          <div className="bg-white p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Regular Users</p>
-                <p className="text-xl font-bold text-amber-600">{stats.users}</p>
+                <p className="text-sm font-semibold text-gray-600 uppercase">Regular Users</p>
+                <p className="text-2xl font-bold text-amber-600">{stats.users}</p>
               </div>
-              <div className="text-2xl">👤</div>
+              <div className="text-3xl">👤</div>
             </div>
           </div>
         </div>
@@ -139,35 +152,35 @@ const AdminUsers = () => {
       ) : (
         <div className="bg-white rounded-xl overflow-hidden shadow-md">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">User</th>
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">Email</th>
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">Phone</th>
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">Role</th>
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">Joined</th>
-                  <th className="text-left p-2 text-gray-600 font-semibold text-xs uppercase">Actions</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">User</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">Email</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">Phone</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">Role</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">Joined</th>
+                  <th className="text-left p-4 text-gray-600 font-semibold text-sm uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.map(user => (
                   <tr key={user._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    <td className="p-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
                           {user.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800 text-sm">{user.name}</p>
-                          <p className="text-xs text-gray-500">ID: {user._id.slice(-6).toUpperCase()}</p>
+                          <p className="font-semibold text-gray-800">{user.name}</p>
+                          <p className="text-sm text-gray-500">ID: {user._id.slice(-6).toUpperCase()}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-2 text-gray-600 text-sm">{user.email}</td>
-                    <td className="p-2 text-gray-600 text-sm">{user.phone || 'Not provided'}</td>
-                    <td className="p-2">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${
+                    <td className="p-4 text-gray-600">{user.email}</td>
+                    <td className="p-4 text-gray-600">{formatPhoneNumber(user.phone)}</td>
+                    <td className="p-4">
+                      <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold capitalize ${
                         user.role === 'admin' ? 'bg-gray-100 text-gray-800' :
                         user.role === 'user' ? 'bg-gray-100 text-gray-800' :
                         'bg-gray-100 text-gray-800'
@@ -175,13 +188,13 @@ const AdminUsers = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="p-2 text-gray-600 text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
-                    <td className="p-2">
+                    <td className="p-4 text-gray-600">{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td className="p-4">
                       <div className="flex items-center gap-2">
                         <select 
                           value={user.role}
                           onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                          className="px-2 py-1 bg-white border-2 border-gray-200 text-gray-800 rounded-md text-xs font-semibold cursor-pointer transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                          className="px-3 py-2 bg-white border-2 border-gray-200 text-gray-800 rounded-md text-sm font-semibold cursor-pointer transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         >
                           <option value="user">User</option>
                           <option value="admin">Admin</option>

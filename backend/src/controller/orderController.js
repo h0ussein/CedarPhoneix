@@ -1,6 +1,7 @@
 import Order from '../model/Order.js';
 import Product from '../model/Product.js';
 import User from '../model/User.js';
+import UserGuest from '../model/UserGuest.js';
 import Settings from '../model/Settings.js';
 
 // @desc    Create new order (guest or user)
@@ -30,34 +31,40 @@ export const createOrder = async (req, res) => {
 
     // For guest users, check if a registered user exists with this email
     if (isGuest && shippingInfo.email) {
+      // Normalize email
+      const normalizedEmail = shippingInfo.email.toLowerCase().trim();
+      
       // First check if a regular user exists with this email
       let existingUser = await User.findOne({ 
-        email: shippingInfo.email,
-        isGuest: { $ne: true } 
+        email: normalizedEmail
       });
       
       if (existingUser) {
         // Link order to existing registered user
         userId = existingUser._id;
       } else {
-        // Check for existing guest user or create new one
-        let guestUser = await User.findOne({ 
-          email: shippingInfo.email,
-          isGuest: true 
+        // Check for existing guest user or create new one in UserGuest collection
+        let guestUser = await UserGuest.findOne({ 
+          email: normalizedEmail
         });
         
         if (!guestUser) {
           try {
-            guestUser = await User.create({
+            guestUser = await UserGuest.create({
               name: shippingInfo.name || `${shippingInfo.firstName || ''} ${shippingInfo.lastName || ''}`.trim(),
-              email: shippingInfo.email,
+              email: normalizedEmail,
               phone: shippingInfo.mobile ? `${shippingInfo.mobileCountryCode || '961'}${shippingInfo.mobile}` : shippingInfo.phone,
-              role: 'guest',
-              isGuest: true
+              address: {
+                street: shippingInfo.address,
+                city: shippingInfo.city,
+                state: shippingInfo.state,
+                zipCode: shippingInfo.zipCode,
+                country: shippingInfo.country
+              }
             });
           } catch (error) {
-            // If user creation fails, try to find existing user
-            guestUser = await User.findOne({ email: shippingInfo.email });
+            // If guest creation fails, try to find existing guest
+            guestUser = await UserGuest.findOne({ email: normalizedEmail });
             if (!guestUser) {
               return res.status(400).json({
                 success: false,
@@ -67,7 +74,9 @@ export const createOrder = async (req, res) => {
             }
           }
         }
-        userId = guestUser._id;
+        // For guest orders, we'll store null in user field and use email to link
+        // The order will be linked via shippingInfo.email
+        userId = null;
       }
     } else if (!isGuest) {
       // User is authenticated, use their ID
@@ -138,11 +147,17 @@ export const createOrder = async (req, res) => {
     // Recalculate total price with delivery
     const finalTotalPrice = itemsPrice + finalDeliveryPrice;
 
+    // Normalize email in shippingInfo for consistency
+    const normalizedShippingInfo = {
+      ...shippingInfo,
+      email: shippingInfo.email ? shippingInfo.email.toLowerCase().trim() : shippingInfo.email
+    };
+
     // Create order with processed order items (includes defaults)
     const order = await Order.create({
       user: userId,
       orderItems: processedOrderItems,
-      shippingInfo,
+      shippingInfo: normalizedShippingInfo,
       paymentInfo: paymentInfo || {},
       itemsPrice,
       deliveryPrice: finalDeliveryPrice,
@@ -217,10 +232,10 @@ export const getOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     // Get user's email to also find guest orders with matching email
-    const userEmail = req.user.email;
+    const userEmail = req.user.email.toLowerCase().trim();
     
     // Find orders by user ID (for logged-in user orders)
-    // OR by shipping email matching user's email (for guest orders placed with this email)
+    // OR by shipping email matching user's email (for guest orders placed with this email before registration)
     const orders = await Order.find({
       $or: [
         { user: req.user._id },

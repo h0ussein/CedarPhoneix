@@ -1,4 +1,6 @@
 import User from '../model/User.js';
+import UserGuest from '../model/UserGuest.js';
+import Order from '../model/Order.js';
 import jwt from 'jsonwebtoken';
 
 // Generate JWT Token
@@ -15,38 +17,77 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
 
-    // Check if user exists
-    const userExists = await User.findOne({ email });
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists in User collection
+    const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'User already exists with this email. Please login instead.'
       });
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      role: 'user'
-    });
+    // Check if guest user exists in UserGuest collection
+    const guestUser = await UserGuest.findOne({ email: normalizedEmail });
+
+    let newUser;
+    
+    if (guestUser) {
+      // Guest user exists - migrate to regular user
+      // Create user with guest data + new password
+      newUser = await User.create({
+        name: name || guestUser.name,
+        email: normalizedEmail,
+        password: password,
+        phone: phone || guestUser.phone,
+        role: 'user',
+        address: guestUser.address || undefined
+      });
+
+      // Update all guest orders with this email to link to the new user
+      await Order.updateMany(
+        { 
+          'shippingInfo.email': normalizedEmail,
+          $or: [
+            { user: null },
+            { isGuestOrder: true }
+          ]
+        },
+        { 
+          $set: { user: newUser._id, isGuestOrder: false }
+        }
+      );
+
+      // Delete the guest user record
+      await UserGuest.findByIdAndDelete(guestUser._id);
+
+    } else {
+      // No guest user exists - create new user
+      newUser = await User.create({
+        name,
+        email: normalizedEmail,
+        password,
+        phone,
+        role: 'user'
+      });
+    }
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(newUser._id);
 
     res.status(201).json({
       success: true,
       data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
         token
       },
-      message: 'User registered successfully'
+      message: guestUser ? 'Account created successfully from guest checkout' : 'User registered successfully'
     });
   } catch (error) {
     res.status(400).json({

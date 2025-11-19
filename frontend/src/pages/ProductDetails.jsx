@@ -110,6 +110,14 @@ const ProductDetails = () => {
     setWishlistUpdate(prev => prev + 1) // Force re-render
   }
 
+  const handleWhatsAppOrder = () => {
+    const productLink = `${window.location.origin}/product/${product._id}`
+    const message = `Hello! I'm interested in ordering this product:\n\n*${product.name}*\n\nProduct Link: ${productLink}`
+    const encodedMessage = encodeURIComponent(message)
+    const whatsappUrl = `https://wa.me/96176878301?text=${encodedMessage}`
+    window.open(whatsappUrl, '_blank')
+  }
+
   const images = product?.images && product.images.length > 0 
     ? [product.imageUrl, ...product.images] 
     : [product?.imageUrl].filter(Boolean)
@@ -391,39 +399,49 @@ const ProductDetails = () => {
 
               {/* Action Buttons */}
               <div className="pt-6 border-t-2 border-gray-200">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleWishlistToggle}
-                    className={`p-4 rounded-xl border-2 font-semibold transition-all flex items-center justify-center ${
-                      isInWishlist(product._id) 
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 hover:from-amber-600 hover:to-orange-600' 
-                        : 'bg-white text-emerald-700 border-emerald-600 hover:bg-emerald-50'
-                    }`}
-                    title={isInWishlist(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                  >
-                    <svg 
-                      width="24" 
-                      height="24" 
-                      viewBox="0 0 24 24" 
-                      fill={isInWishlist(product._id) ? 'white' : 'none'} 
-                      stroke="currentColor"
-                      strokeWidth="2"
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={handleWishlistToggle}
+                      className={`p-4 rounded-xl border-2 font-semibold transition-all flex items-center justify-center ${
+                        isInWishlist(product._id) 
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 hover:from-amber-600 hover:to-orange-600' 
+                          : 'bg-white text-emerald-700 border-emerald-600 hover:bg-emerald-50'
+                      }`}
+                      title={isInWishlist(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
                     >
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
+                      <svg 
+                        width="24" 
+                        height="24" 
+                        viewBox="0 0 24 24" 
+                        fill={isInWishlist(product._id) ? 'white' : 'none'} 
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={product.stock === 0 || !isVariantSelectionComplete()}
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold py-4 px-8 rounded-xl hover:from-emerald-700 hover:to-teal-600 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.4)] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none text-lg border-none cursor-pointer"
+                    >
+                      {product.stock === 0 
+                        ? 'Out of Stock' 
+                        : !isVariantSelectionComplete()
+                        ? 'Please Select Options'
+                        : `Add to Cart (${quantity})`
+                      }
+                    </button>
+                  </div>
                   
                   <button
-                    onClick={handleAddToCart}
-                    disabled={product.stock === 0 || !isVariantSelectionComplete()}
-                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold py-4 px-8 rounded-xl hover:from-emerald-700 hover:to-teal-600 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.4)] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none text-lg border-none cursor-pointer"
+                    onClick={handleWhatsAppOrder}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-emerald-700 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(34,197,94,0.4)] transition-all text-lg border-none cursor-pointer flex items-center justify-center gap-3"
                   >
-                    {product.stock === 0 
-                      ? 'Out of Stock' 
-                      : !isVariantSelectionComplete()
-                      ? 'Please Select Options'
-                      : `Add to Cart (${quantity})`
-                    }
+                    <span className="text-2xl">💬</span>
+                    Order via WhatsApp
                   </button>
                 </div>
               </div>

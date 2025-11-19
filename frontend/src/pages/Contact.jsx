@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 const Contact = () => {
   const { toggleCart, getCartCount } = useCart()
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,6 +15,17 @@ const Contact = () => {
     message: ''
   })
   const [submitted, setSubmitted] = useState(false)
+
+  // Autofill name and email when user is logged in
+  useEffect(() => {
+    if (user && user.name && user.email) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || user.name,
+        email: prev.email || user.email
+      }))
+    }
+  }, [user])
 
   const handleChange = (e) => {
     setFormData({
@@ -25,7 +38,13 @@ const Contact = () => {
     e.preventDefault()
     console.log('Contact form submitted:', formData)
     setSubmitted(true)
-    setFormData({ name: '', email: '', subject: '', message: '' })
+    // Keep name and email filled if user is logged in
+    setFormData({ 
+      name: user?.name || '', 
+      email: user?.email || '', 
+      subject: '', 
+      message: '' 
+    })
     setTimeout(() => setSubmitted(false), 5000)
   }
 
@@ -42,23 +61,22 @@ const Contact = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 flex flex-col gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl transition-all">
-              <div className="text-4xl mb-4">📍</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Address</h3>
-              <p className="text-gray-600 leading-relaxed">123 Cedar Phoenix Street<br />Commerce City, CC 12345</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl transition-all">
-              <div className="text-4xl mb-4">📧</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Email</h3>
-              <p className="text-gray-600 leading-relaxed">support@cedarphoenix.com<br />info@cedarphoenix.com</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl transition-all">
-              <div className="text-4xl mb-4">📞</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Phone</h3>
-              <p className="text-gray-600 leading-relaxed">+1 (555) 123-4567<br />Mon-Fri, 9AM-6PM</p>
+          <div className="lg:col-span-1">
+            <div className="bg-white p-8 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl transition-all">
+              <div className="text-5xl mb-6 text-center">💬</div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">Contact Us with WhatsApp</h3>
+              <p className="text-gray-600 leading-relaxed text-center mb-6">
+                Get in touch with us instantly via WhatsApp. We're here to help you with any questions or concerns.
+              </p>
+              <a
+                href="https://wa.me/96176878301"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white border-none px-6 py-4 rounded-lg text-lg font-semibold cursor-pointer hover:from-green-600 hover:to-emerald-700 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-3"
+              >
+                <span className="text-2xl">💬</span>
+                Chat on WhatsApp
+              </a>
             </div>
           </div>
 

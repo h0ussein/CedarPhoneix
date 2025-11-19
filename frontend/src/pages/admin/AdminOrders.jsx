@@ -405,7 +405,7 @@ const AdminOrders = () => {
                       <span className="text-gray-600">Phone:</span>
                       <span className="ml-2 font-semibold text-gray-800">
                         {selectedOrder.shippingInfo?.mobile 
-                          ? `+${selectedOrder.shippingInfo?.mobileCountryCode || '961'}${selectedOrder.shippingInfo.mobile}`
+                          ? `+${selectedOrder.shippingInfo?.mobileCountryCode || '961'} ${selectedOrder.shippingInfo.mobile}`
                           : selectedOrder.shippingInfo?.phone || 'N/A'}
                       </span>
                     </div>
