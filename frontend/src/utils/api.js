@@ -194,6 +194,14 @@ export const inventoryPurchasesAPI = {
   })
 }
 
+// Contact API
+export const contactAPI = {
+  sendMessage: (contactData) => apiCall('/contact', {
+    method: 'POST',
+    body: JSON.stringify(contactData)
+  })
+}
+
 // Export apiClient for direct use (e.g., FormData uploads)
 export { apiClient }
 
@@ -204,6 +212,7 @@ export default {
   users: usersAPI,
   settings: settingsAPI,
   profit: profitAPI,
-  inventoryPurchases: inventoryPurchasesAPI
+  inventoryPurchases: inventoryPurchasesAPI,
+  contact: contactAPI
 }
 

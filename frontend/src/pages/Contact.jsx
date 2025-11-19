@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import ShoppingCart from '../components/ShoppingCart'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { contactAPI } from '../utils/api'
 
 const Contact = () => {
   const { toggleCart, getCartCount } = useCart()
@@ -15,6 +17,7 @@ const Contact = () => {
     message: ''
   })
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Autofill name and email when user is logged in
   useEffect(() => {
@@ -34,18 +37,38 @@ const Contact = () => {
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Contact form submitted:', formData)
-    setSubmitted(true)
-    // Keep name and email filled if user is logged in
-    setFormData({ 
-      name: user?.name || '', 
-      email: user?.email || '', 
-      subject: '', 
-      message: '' 
-    })
-    setTimeout(() => setSubmitted(false), 5000)
+    setLoading(true)
+
+    try {
+      await contactAPI.sendMessage(formData)
+      
+      toast.success('Message sent successfully! We will get back to you soon.', {
+        icon: '✅',
+        style: { background: '#10b981', color: '#fff' },
+        duration: 4000
+      })
+      
+      setSubmitted(true)
+      // Keep name and email filled if user is logged in
+      setFormData({ 
+        name: user?.name || '', 
+        email: user?.email || '', 
+        subject: '', 
+        message: '' 
+      })
+      setTimeout(() => setSubmitted(false), 5000)
+    } catch (error) {
+      console.error('Contact form error:', error)
+      toast.error(error.message || 'Failed to send message. Please try again.', {
+        icon: '❌',
+        style: { background: '#ef4444', color: '#fff' },
+        duration: 4000
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -83,8 +106,8 @@ const Contact = () => {
           <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Send Us a Message</h2>
             {submitted && (
-              <div className="bg-gray-100 text-black p-4 rounded-lg mb-6 font-semibold">
-                Thank you! We'll get back to you soon.
+              <div className="bg-green-100 border border-green-400 text-green-700 p-4 rounded-lg mb-6 font-semibold">
+                ✅ Thank you! Your message has been sent successfully. We'll get back to you soon.
               </div>
             )}
             <form onSubmit={handleSubmit}>
@@ -136,8 +159,12 @@ const Contact = () => {
                 ></textarea>
               </div>
 
-              <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-none px-4 py-4 rounded-lg text-lg font-semibold cursor-pointer hover:from-emerald-700 hover:to-teal-600 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.4)] transition-all">
-                Send Message
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-none px-4 py-4 rounded-lg text-lg font-semibold cursor-pointer hover:from-emerald-700 hover:to-teal-600 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                {loading ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>

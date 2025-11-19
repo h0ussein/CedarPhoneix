@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/h0ussein/CedarPhoneix/issues"
   },
-  "homepage": "https://github.com/h0ussein/CedarPhoneix#readme"
+  "homepage": "https://github.com/h0ussein/CedarPhoneix#readme",
+  "dependencies": {
+    "nodemailer": "^7.0.10"
+  }
 }
