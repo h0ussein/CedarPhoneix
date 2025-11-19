@@ -25,22 +25,47 @@ export const sendContactMessage = async (req, res) => {
     }
 
     // Create transporter
-    // You'll need to configure these in your .env file
+    // Use port 465 with SSL for better cloud platform compatibility (Render, etc.)
+    const smtpPort = parseInt(process.env.SMTP_PORT) || 465;
+    const useSecure = smtpPort === 465;
+    
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true for 465, false for other ports
+      port: smtpPort,
+      secure: useSecure, // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
-      }
+      },
+      tls: {
+        // Don't fail on invalid certificates
+        rejectUnauthorized: false
+      },
+      // Increase timeout for cloud platforms
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     });
 
     // Verify transporter configuration
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Missing SMTP credentials');
       return res.status(500).json({
         success: false,
         message: 'Email service is not configured. Please contact the administrator.'
+      });
+    }
+
+    // Verify SMTP connection before sending
+    try {
+      console.log('Verifying SMTP connection...');
+      await transporter.verify();
+      console.log('SMTP connection verified successfully');
+    } catch (verifyError) {
+      console.error('SMTP verification failed:', verifyError.message);
+      return res.status(500).json({
+        success: false,
+        message: `Email service connection failed: ${verifyError.message}. Please check your SMTP settings.`
       });
     }
 
@@ -77,7 +102,9 @@ ${message}
     };
 
     // Send email
-    await transporter.sendMail(mailOptions);
+    console.log(`Attempting to send email to: ${mailOptions.to}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
 
     // Optional: Send confirmation email to the user
     if (process.env.SEND_CONFIRMATION_EMAIL === 'true') {
@@ -112,7 +139,9 @@ Our Ecommerce Team
         `
       };
 
+      console.log(`Sending confirmation email to: ${email}`);
       await transporter.sendMail(confirmationMailOptions);
+      console.log('Confirmation email sent successfully');
     }
 
     res.status(200).json({

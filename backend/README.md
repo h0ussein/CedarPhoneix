@@ -19,21 +19,25 @@ cp .env.example .env
    ```env
    # SMTP Email Configuration
    SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
+   SMTP_PORT=465
    SMTP_USER=your-email@gmail.com
    SMTP_PASS=your-app-password
-   CONTACT_EMAIL=your-contact-email@gmail.com
    SEND_CONFIRMATION_EMAIL=true
    ```
+   
+   **Important for Render/Cloud Platforms:**
+   - Use port **465** (not 587) for better compatibility with cloud platforms
+   - Port 465 uses SSL and is more reliable on Render, Heroku, etc.
    
    **For Gmail:**
    - Use an App Password (not your regular password)
    - Go to Google Account → Security → 2-Step Verification → App passwords
-   - Generate an app password and use it as `SMTP_PASS`
+   - Generate an app password and use it as `SMTP_PASS` (remove spaces, 16 characters)
+   - Default recipient is `houssein.ibrahim.3@gmail.com` (hardcoded)
    
    **For other email providers:**
    - Update `SMTP_HOST` and `SMTP_PORT` accordingly
-   - Common ports: 587 (TLS), 465 (SSL), 25 (unencrypted)
+   - Common ports: 465 (SSL - recommended), 587 (TLS), 25 (unencrypted)
 
 5. Start the development server:
 ```bash
