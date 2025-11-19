@@ -23,6 +23,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/related-products', icon: '🔗', label: 'Related Products' },
     { path: '/admin/orders', icon: '🛍️', label: 'Orders' },
     { path: '/admin/users', icon: '👥', label: 'Users' },
+    { path: '/admin/profit', icon: '💰', label: 'Profit Management' },
   ]
 
   return (

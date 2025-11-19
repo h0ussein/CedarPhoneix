@@ -76,6 +76,9 @@ export const createOrder = async (req, res) => {
 
     // Verify product stock and validate required variants
     const processedOrderItems = [];
+    let totalCost = 0;
+    let totalProfit = 0;
+    
     for (let item of orderItems) {
       const product = await Product.findById(item.product);
       if (!product) {
@@ -106,8 +109,19 @@ export const createOrder = async (req, res) => {
         });
       }
 
+      // Calculate profit for this item
+      const itemCostPrice = product.costPrice || 0;
+      const itemSellingPrice = item.price;
+      const itemProfit = (itemSellingPrice - itemCostPrice) * item.quantity;
+      const itemCost = itemCostPrice * item.quantity;
+      
+      totalCost += itemCost;
+      totalProfit += itemProfit;
+
       processedOrderItems.push({
         ...item,
+        costPrice: itemCostPrice,
+        profit: itemProfit,
         selectedColor: item.selectedColor || undefined,
         selectedSize: item.selectedSize || undefined
       });
@@ -133,6 +147,8 @@ export const createOrder = async (req, res) => {
       itemsPrice,
       deliveryPrice: finalDeliveryPrice,
       totalPrice: finalTotalPrice,
+      totalCost: totalCost,
+      totalProfit: totalProfit,
       isGuestOrder: isGuest
     });
 

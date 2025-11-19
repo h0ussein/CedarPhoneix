@@ -24,6 +24,7 @@ import AdminCategories from './pages/admin/AdminCategories'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminFeaturedProducts from './pages/admin/AdminFeaturedProducts'
 import AdminRelatedProducts from './pages/admin/AdminRelatedProducts'
+import AdminProfit from './pages/admin/AdminProfit'
 import AddProduct from './pages/admin/AddProduct'
 import EditProduct from './pages/admin/EditProduct'
 import AddCategory from './pages/admin/AddCategory'
@@ -103,6 +104,7 @@ const App = () => {
             <Route path='/admin/categories/edit/:id' element={<ProtectedAdminRoute><EditCategory /></ProtectedAdminRoute>} />
             <Route path='/admin/orders' element={<ProtectedAdminRoute><AdminOrders /></ProtectedAdminRoute>} />
             <Route path='/admin/users' element={<ProtectedAdminRoute><AdminUsers /></ProtectedAdminRoute>} />
+            <Route path='/admin/profit' element={<ProtectedAdminRoute><AdminProfit /></ProtectedAdminRoute>} />
           </Routes>
         </Router>
       </CartProvider>

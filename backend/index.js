@@ -12,6 +12,8 @@ import categoryRoutes from './src/routes/categoryRoutes.js'
 import orderRoutes from './src/routes/orderRoutes.js'
 import userRoutes from './src/routes/userRoutes.js'
 import settingsRoutes from './src/routes/settingsRoutes.js'
+import profitRoutes from './src/routes/profitRoutes.js'
+import inventoryPurchaseRoutes from './src/routes/inventoryPurchaseRoutes.js'
 
 dotenv.config()
 const __dirname = path.resolve();
@@ -34,6 +36,8 @@ app.use('/api/categories', categoryRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/profit', profitRoutes)
+app.use('/api/inventory-purchases', inventoryPurchaseRoutes)
 // Error handler
 app.use(errorHandler)
 

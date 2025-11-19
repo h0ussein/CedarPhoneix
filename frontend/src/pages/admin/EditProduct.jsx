@@ -26,7 +26,8 @@ const EditProduct = () => {
       width: '',
       height: ''
     },
-    discountPercent: ''
+    discountPercent: '',
+    costPrice: ''
   })
   const [sizeInput, setSizeInput] = useState('')
   const [colorInput, setColorInput] = useState('')
@@ -70,7 +71,8 @@ const EditProduct = () => {
           sku: product.sku || '',
           weight: product.weight || '',
           dimensions: product.dimensions || { length: '', width: '', height: '' },
-          discountPercent: product.discountPercent || ''
+          discountPercent: product.discountPercent || '',
+          costPrice: product.costPrice || ''
         })
         setImagePreview(product.imageUrl)
       }
@@ -163,6 +165,11 @@ const EditProduct = () => {
         fd.append('discountPercent', String(parseFloat(formData.discountPercent)))
       } else {
         fd.append('discountPercent', '0')
+      }
+      if (formData.costPrice) {
+        fd.append('costPrice', String(parseFloat(formData.costPrice)))
+      } else {
+        fd.append('costPrice', '0')
       }
       if (formData.sizes.length > 0) {
         fd.append('sizes', JSON.stringify(formData.sizes))
@@ -288,6 +295,22 @@ const EditProduct = () => {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
               />
               <p className="text-xs text-gray-500 mt-1">Enter discount percentage (0-100)</p>
+            </div>
+
+            {/* Cost Price */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Cost Price ($) (Optional)</label>
+              <input
+                type="number"
+                name="costPrice"
+                value={formData.costPrice}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg transition-all focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+              />
+              <p className="text-xs text-gray-500 mt-1">The cost price of the product (for profit calculation)</p>
             </div>
 
             <div className="md:col-span-2">

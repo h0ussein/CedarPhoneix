@@ -20,6 +20,15 @@ const orderItemSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  costPrice: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  profit: {
+    type: Number,
+    default: 0
+  },
   imageUrl: {
     type: String
   },
@@ -106,6 +115,15 @@ const orderSchema = new mongoose.Schema({
   totalPrice: {
     type: Number,
     required: true,
+    default: 0
+  },
+  totalCost: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  totalProfit: {
+    type: Number,
     default: 0
   },
   orderStatus: {

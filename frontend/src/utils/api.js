@@ -166,6 +166,34 @@ export const settingsAPI = {
   })
 }
 
+// Profit API
+export const profitAPI = {
+  getStats: (params = {}) => apiCall('/profit/stats', { params }),
+  getProductsWithCost: () => apiCall('/profit/products'),
+  updateProductCostPrice: (id, costPrice) => apiCall(`/profit/products/${id}/cost`, {
+    method: 'PUT',
+    body: JSON.stringify({ costPrice })
+  }),
+  bulkUpdateCostPrices: (updates) => apiCall('/profit/products/bulk-cost', {
+    method: 'PUT',
+    body: JSON.stringify({ updates })
+  })
+}
+
+// Inventory Purchases API
+export const inventoryPurchasesAPI = {
+  getAll: (params = {}) => apiCall('/inventory-purchases', { params }),
+  create: (data) => apiCall('/inventory-purchases', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  delete: (id) => apiCall(`/inventory-purchases/${id}`, { method: 'DELETE' }),
+  update: (id, data) => apiCall(`/inventory-purchases/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  })
+}
+
 // Export apiClient for direct use (e.g., FormData uploads)
 export { apiClient }
 
@@ -174,6 +202,8 @@ export default {
   categories: categoriesAPI,
   orders: ordersAPI,
   users: usersAPI,
-  settings: settingsAPI
+  settings: settingsAPI,
+  profit: profitAPI,
+  inventoryPurchases: inventoryPurchasesAPI
 }
 

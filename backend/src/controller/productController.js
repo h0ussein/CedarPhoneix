@@ -131,6 +131,9 @@ export const createProduct = async (req, res) => {
     if (body.discountPercent !== undefined) {
       body.discountPercent = parseFloat(body.discountPercent) || 0;
     }
+    if (body.costPrice !== undefined) {
+      body.costPrice = parseFloat(body.costPrice) || 0;
+    }
     // Parse JSON fields from FormData
     if (typeof body.sizes === 'string') {
       try {
@@ -202,6 +205,9 @@ export const updateProduct = async (req, res) => {
     }
     if (updates.discountPercent !== undefined) {
       updates.discountPercent = parseFloat(updates.discountPercent) || 0;
+    }
+    if (updates.costPrice !== undefined) {
+      updates.costPrice = parseFloat(updates.costPrice) || 0;
     }
     // Parse JSON fields from FormData
     if (typeof updates.sizes === 'string') {

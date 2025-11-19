@@ -10,6 +10,7 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [editingDeliveryPrice, setEditingDeliveryPrice] = useState(false)
   const [deliveryPriceInput, setDeliveryPriceInput] = useState('')
+  const [deletingOrderId, setDeletingOrderId] = useState(null)
 
   useEffect(() => {
     fetchOrders()
@@ -53,6 +54,25 @@ const AdminOrders = () => {
     } catch (error) {
       console.error('Error:', error)
       toast.error(error.message || 'Error updating order status')
+    }
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+    setDeletingOrderId(orderId);
+    try {
+      await ordersAPI.delete(orderId);
+      setOrders(orders.filter(o => o._id !== orderId));
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder(null);
+      }
+      toast.success('Order deleted successfully');
+    } catch (error) {
+      toast.error(error.message || 'Error deleting order');
+    } finally {
+      setDeletingOrderId(null);
     }
   }
 
@@ -187,6 +207,14 @@ const AdminOrders = () => {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
+                      <button
+                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold hover:bg-red-700 transition-colors disabled:bg-red-300"
+                        disabled={deletingOrderId === order._id}
+                        onClick={() => handleDeleteOrder(order._id)}
+                        title="Delete Order"
+                      >
+                        {deletingOrderId === order._id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -448,6 +476,13 @@ const AdminOrders = () => {
                 className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
               >
                 Close
+              </button>
+              <button
+                onClick={() => handleDeleteOrder(selectedOrder._id)}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:bg-red-300"
+                disabled={deletingOrderId === selectedOrder._id}
+              >
+                {deletingOrderId === selectedOrder._id ? 'Deleting...' : 'Delete Order'}
               </button>
             </div>
           </div>

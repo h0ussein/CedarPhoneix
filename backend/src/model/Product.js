@@ -83,6 +83,11 @@ const productSchema = new mongoose.Schema({
     default: 0,
     min: [0, 'Discount cannot be negative'],
     max: [100, 'Discount cannot exceed 100%']
+  },
+  costPrice: {
+    type: Number,
+    default: 0,
+    min: [0, 'Cost price cannot be negative']
   }
 }, {
   timestamps: true
