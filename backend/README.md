@@ -14,7 +14,28 @@ cp .env.example .env
 
 3. Update the `.env` file with your MongoDB connection string and other configurations.
 
-4. Start the development server:
+4. **Email Configuration (for Contact Form):**
+   Add the following environment variables to your `.env` file:
+   ```env
+   # SMTP Email Configuration
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   CONTACT_EMAIL=your-contact-email@gmail.com
+   SEND_CONFIRMATION_EMAIL=true
+   ```
+   
+   **For Gmail:**
+   - Use an App Password (not your regular password)
+   - Go to Google Account → Security → 2-Step Verification → App passwords
+   - Generate an app password and use it as `SMTP_PASS`
+   
+   **For other email providers:**
+   - Update `SMTP_HOST` and `SMTP_PORT` accordingly
+   - Common ports: 587 (TLS), 465 (SSL), 25 (unencrypted)
+
+5. Start the development server:
 ```bash
 npm run dev
 ```
@@ -53,6 +74,9 @@ npm run dev
 - `GET /api/users` - Get all users (Admin)
 - `DELETE /api/users/:id` - Delete user (Admin)
 - `PUT /api/users/:id/role` - Update user role (Admin)
+
+### Contact
+- `POST /api/contact` - Send contact form message via email (Public)
 
 ## Authentication
 
