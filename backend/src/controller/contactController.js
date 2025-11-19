@@ -24,13 +24,39 @@ export const sendContactMessage = async (req, res) => {
       });
     }
 
+    // Verify transporter configuration first
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Missing SMTP credentials');
+      return res.status(500).json({
+        success: false,
+        message: 'Email service is not configured. Please contact the administrator.'
+      });
+    }
+
+    // Ensure SMTP_HOST is set correctly (not an email address)
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    if (smtpHost.includes('@')) {
+      console.error('SMTP_HOST should be a hostname (e.g., smtp.gmail.com), not an email address');
+      return res.status(500).json({
+        success: false,
+        message: 'SMTP configuration error: SMTP_HOST must be a hostname, not an email address.'
+      });
+    }
+
     // Create transporter
     // Use port 465 with SSL for better cloud platform compatibility (Render, etc.)
     const smtpPort = parseInt(process.env.SMTP_PORT) || 465;
     const useSecure = smtpPort === 465;
     
+    console.log('Creating SMTP transporter with:', {
+      host: smtpHost,
+      port: smtpPort,
+      secure: useSecure,
+      user: process.env.SMTP_USER
+    });
+    
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      host: smtpHost,
       port: smtpPort,
       secure: useSecure, // true for 465, false for other ports
       auth: {
@@ -46,15 +72,6 @@ export const sendContactMessage = async (req, res) => {
       greetingTimeout: 10000,
       socketTimeout: 10000
     });
-
-    // Verify transporter configuration
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('Missing SMTP credentials');
-      return res.status(500).json({
-        success: false,
-        message: 'Email service is not configured. Please contact the administrator.'
-      });
-    }
 
     // Verify SMTP connection before sending
     try {
