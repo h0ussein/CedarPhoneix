@@ -17,27 +17,40 @@ const VerifyEmail = () => {
   const [resending, setResending] = useState(false)
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    const emailParam = searchParams.get('email')
+    try {
+      const token = searchParams.get('token')
+      const emailParam = searchParams.get('email')
 
-    if (!token || !emailParam) {
+      console.log('Verification page loaded:', { token: token ? 'present' : 'missing', email: emailParam })
+
+      if (!token || !emailParam) {
+        console.error('Missing token or email:', { token: !!token, email: !!emailParam })
+        setStatus('error')
+        setMessage('Invalid verification link. Please check your email and try again.')
+        return
+      }
+
+      setEmail(emailParam)
+      verifyEmail(token, emailParam)
+    } catch (error) {
+      console.error('Error in VerifyEmail useEffect:', error)
       setStatus('error')
-      setMessage('Invalid verification link. Please check your email and try again.')
-      return
+      setMessage('An error occurred. Please try again.')
     }
-
-    setEmail(emailParam)
-    verifyEmail(token, emailParam)
   }, [searchParams])
 
   const verifyEmail = async (token, email) => {
     try {
+      console.log('Attempting to verify email:', { token: token.substring(0, 10) + '...', email })
       const data = await usersAPI.verifyEmail(token, email)
+      console.log('Verification response:', data)
+      
       setStatus('success')
       setMessage(data.message || 'Email verified successfully!')
       
       // If token is returned, automatically log the user in
       if (data.data && data.data.token) {
+        console.log('Logging user in automatically')
         login(data.data)
         
         // Redirect to account page after 2 seconds
@@ -45,12 +58,14 @@ const VerifyEmail = () => {
           navigate('/account')
         }, 2000)
       } else {
+        console.log('No token returned, redirecting to login')
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login')
         }, 3000)
       }
     } catch (error) {
+      console.error('Verification error:', error)
       setStatus('error')
       setMessage(error.message || 'Failed to verify email. The link may have expired.')
     }
@@ -69,6 +84,18 @@ const VerifyEmail = () => {
     } finally {
       setResending(false)
     }
+  }
+
+  // Always render something, even if there's an error
+  if (!status) {
+    return (
+      <div className="min-h-screen pb-20 md:pb-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
