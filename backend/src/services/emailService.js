@@ -19,7 +19,8 @@ export const generateVerificationToken = () => {
 export const sendVerificationEmail = async (user, token) => {
   try {
     const resend = getResend();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Ensure FRONTEND_URL doesn't end with a slash
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
     const verificationUrl = `${frontendUrl}/verify-email?token=${token}&email=${encodeURIComponent(user.email)}`;
     
     console.log('📧 Preparing verification email...');

@@ -9,31 +9,54 @@ import { useCart } from '../context/CartContext'
 const VerifyEmail = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login } = useAuth()
-  const { toggleCart, getCartCount } = useCart()
-  const [status, setStatus] = useState('verifying') // verifying, success, error
+  const [status, setStatus] = useState('loading') // loading, verifying, success, error
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [resending, setResending] = useState(false)
+  
+  // Safely get auth and cart hooks
+  let login = () => {}
+  let toggleCart = () => {}
+  let getCartCount = () => 0
+  
+  try {
+    const auth = useAuth()
+    login = auth?.login || (() => {})
+  } catch (e) {
+    console.warn('Auth context not available:', e)
+  }
+  
+  try {
+    const cart = useCart()
+    toggleCart = cart?.toggleCart || (() => {})
+    getCartCount = cart?.getCartCount || (() => 0)
+  } catch (e) {
+    console.warn('Cart context not available:', e)
+  }
 
   useEffect(() => {
     try {
       const token = searchParams.get('token')
       const emailParam = searchParams.get('email')
 
-      console.log('Verification page loaded:', { token: token ? 'present' : 'missing', email: emailParam })
+      console.log('🔍 Verification page loaded:', { 
+        token: token ? token.substring(0, 10) + '...' : 'missing', 
+        email: emailParam || 'missing',
+        fullUrl: window.location.href
+      })
 
       if (!token || !emailParam) {
-        console.error('Missing token or email:', { token: !!token, email: !!emailParam })
+        console.error('❌ Missing token or email:', { token: !!token, email: !!emailParam })
         setStatus('error')
         setMessage('Invalid verification link. Please check your email and try again.')
         return
       }
 
       setEmail(emailParam)
+      setStatus('verifying')
       verifyEmail(token, emailParam)
     } catch (error) {
-      console.error('Error in VerifyEmail useEffect:', error)
+      console.error('❌ Error in VerifyEmail useEffect:', error)
       setStatus('error')
       setMessage('An error occurred. Please try again.')
     }
@@ -86,22 +109,37 @@ const VerifyEmail = () => {
     }
   }
 
-  // Always render something, even if there's an error
-  if (!status) {
+  // Always render something
+  if (status === 'loading') {
     return (
       <div className="min-h-screen pb-20 md:pb-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading verification page...</p>
         </div>
       </div>
     )
   }
 
+  // Render basic content first to ensure page loads
   return (
     <div className="min-h-screen pb-20 md:pb-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-amber-50">
-      <NavBar />
-      <BottomNav onCartClick={toggleCart} cartCount={getCartCount()} />
+      {(() => {
+        try {
+          return <NavBar />
+        } catch (e) {
+          console.warn('NavBar error:', e)
+          return null
+        }
+      })()}
+      {(() => {
+        try {
+          return <BottomNav onCartClick={toggleCart} cartCount={getCartCount()} />
+        } catch (e) {
+          console.warn('BottomNav error:', e)
+          return null
+        }
+      })()}
       
       <main className="max-w-2xl mx-auto px-4 md:px-8 py-16">
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center">
