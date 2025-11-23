@@ -15,7 +15,7 @@ const BottomNav = ({ onCartClick, cartCount = 0 }) => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-white to-emerald-50/30 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] flex justify-around items-center py-2 z-[2001] border-t border-emerald-200 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-white to-emerald-50/30 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] flex justify-around items-center py-2 z-[999] border-t border-emerald-200 md:hidden">
       <Link 
         to="/" 
         onClick={handleNavClick}

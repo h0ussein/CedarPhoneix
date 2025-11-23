@@ -3,7 +3,7 @@ import Product from '../model/Product.js';
 import User from '../model/User.js';
 import UserGuest from '../model/UserGuest.js';
 import Settings from '../model/Settings.js';
-import { sendOrderConfirmationEmail, sendOrderStatusEmail } from '../services/emailService.js';
+import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminOrderNotification } from '../services/emailService.js';
 
 // @desc    Create new order (guest or user)
 // @route   POST /api/orders
@@ -176,11 +176,23 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // Send order confirmation email (order already has product names from processedOrderItems)
+    // Populate order with product details for email
+    const populatedOrder = await Order.findById(order._id)
+      .populate('orderItems.product', 'name price imageUrl');
+
+    // Send order confirmation email to customer
     try {
-      await sendOrderConfirmationEmail(order);
+      await sendOrderConfirmationEmail(populatedOrder);
     } catch (emailError) {
       console.error('Failed to send order confirmation email:', emailError);
+      // Don't fail order creation if email fails
+    }
+
+    // Send order notification email to all admins
+    try {
+      await sendAdminOrderNotification(populatedOrder);
+    } catch (emailError) {
+      console.error('Failed to send admin order notification:', emailError);
       // Don't fail order creation if email fails
     }
 

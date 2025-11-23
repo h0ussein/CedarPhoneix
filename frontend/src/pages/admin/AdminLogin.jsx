@@ -98,13 +98,6 @@ const AdminLogin = () => {
               {loading ? 'Logging in...' : 'Login to Admin Panel'}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t-2 border-gray-200">
-            <p className="text-center text-sm text-gray-600">
-              Demo Credentials:<br />
-              <span className="text-black font-mono font-semibold">admin@cedarphoenix.com / admin123</span>
-            </p>
-          </div>
         </div>
 
         <div className="text-center mt-6">

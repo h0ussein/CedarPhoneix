@@ -104,12 +104,6 @@ const Login = () => {
               </Link>
             </p>
           </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              Demo: <span className="text-black font-mono">user@cedarphoenix.com / user123</span>
-            </p>
-          </div>
         </div>
 
         <div className="text-center mt-6">
