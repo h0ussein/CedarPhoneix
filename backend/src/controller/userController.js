@@ -2,6 +2,7 @@ import User from '../model/User.js';
 import UserGuest from '../model/UserGuest.js';
 import Order from '../model/Order.js';
 import jwt from 'jsonwebtoken';
+import { generateVerificationToken, sendVerificationEmail } from '../services/emailService.js';
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -75,19 +76,29 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Generate token
-    const token = generateToken(newUser._id);
+    // Generate email verification token
+    const verificationToken = generateVerificationToken();
+    newUser.emailVerificationToken = verificationToken;
+    newUser.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await newUser.save();
 
+    // Send verification email
+    try {
+      await sendVerificationEmail(newUser, verificationToken);
+      console.log('✅ Verification email sent to:', normalizedEmail);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email:', emailError);
+      // Don't fail registration, but log the error
+    }
+
+    // Don't return token - user must verify email first
     res.status(201).json({
       success: true,
       data: {
-        _id: newUser._id,
-        name: newUser.name,
         email: newUser.email,
-        role: newUser.role,
-        token
+        isEmailVerified: false
       },
-      message: guestUser ? 'Account created successfully from guest checkout' : 'User registered successfully'
+      message: 'Account created successfully! Please check your email to verify your account before logging in.'
     });
   } catch (error) {
     res.status(400).json({
@@ -112,6 +123,14 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email address before logging in. Check your inbox for the verification link.'
       });
     }
 
@@ -149,6 +168,18 @@ export const getUserProfile = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found'
+      });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email address to access your account.',
+        data: {
+          ...user.toObject(),
+          requiresVerification: true
+        }
       });
     }
 
@@ -283,6 +314,127 @@ export const updateUserRole = async (req, res) => {
     res.status(400).json({
       success: false,
       message: 'Error updating user role',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Verify email address
+// @route   GET /api/users/verify-email
+// @access  Public
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token: verificationToken, email } = req.query;
+
+    if (!verificationToken || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and email are required'
+      });
+    }
+
+    // Find user by email and token
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    // Verify email
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    // Generate JWT token so user can be automatically logged in
+    const jwtToken = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully!',
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: true,
+        token: jwtToken
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying email',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/users/resend-verification
+// @access  Public
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user) {
+      // Don't reveal if user exists for security
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a verification link has been sent.'
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save();
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user, verificationToken);
+      console.log('✅ Verification email resent to:', email);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email:', emailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email. Please try again later.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification email sent successfully. Please check your inbox.'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error sending verification email',
       error: error.message
     });
   }

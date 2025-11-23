@@ -3,6 +3,7 @@ import Product from '../model/Product.js';
 import User from '../model/User.js';
 import UserGuest from '../model/UserGuest.js';
 import Settings from '../model/Settings.js';
+import { sendOrderConfirmationEmail, sendOrderStatusEmail } from '../services/emailService.js';
 
 // @desc    Create new order (guest or user)
 // @route   POST /api/orders
@@ -175,6 +176,14 @@ export const createOrder = async (req, res) => {
       );
     }
 
+    // Send order confirmation email (order already has product names from processedOrderItems)
+    try {
+      await sendOrderConfirmationEmail(order);
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+      // Don't fail order creation if email fails
+    }
+
     res.status(201).json({
       success: true,
       data: order,
@@ -303,6 +312,8 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    const oldStatus = order.orderStatus;
+    
     if (orderStatus) {
       order.orderStatus = orderStatus;
       if (orderStatus === 'delivered') {
@@ -325,6 +336,16 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     await order.save();
+
+    // Send status update email if status changed to processing, delivered, or cancelled
+    if (orderStatus && orderStatus !== oldStatus && ['processing', 'delivered', 'cancelled'].includes(orderStatus)) {
+      try {
+        await sendOrderStatusEmail(order, oldStatus);
+      } catch (emailError) {
+        console.error('Failed to send order status email:', emailError);
+        // Don't fail order update if email fails
+      }
+    }
 
     res.status(200).json({
       success: true,

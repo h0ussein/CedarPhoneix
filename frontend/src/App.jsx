@@ -13,6 +13,7 @@ import CategoryProducts from './pages/CategoryProducts'
 import ProductDetails from './pages/ProductDetails'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import VerifyEmail from './pages/VerifyEmail'
 import Account from './pages/Account'
 import MyOrders from './pages/MyOrders'
 import Wishlist from './pages/Wishlist'
@@ -85,6 +86,7 @@ const App = () => {
             {/* User Auth Routes */}
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
+            <Route path='/verify-email' element={<VerifyEmail />} />
             <Route path='/account' element={<Account />} />
             <Route path='/orders' element={<MyOrders />} />
             <Route path='/wishlist' element={<Wishlist />} />

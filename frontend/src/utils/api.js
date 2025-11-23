@@ -153,6 +153,11 @@ export const usersAPI = {
   updateRole: (id, role) => apiCall(`/users/${id}/role`, {
     method: 'PUT',
     body: JSON.stringify({ role })
+  }),
+  verifyEmail: (token, email) => apiCall(`/users/verify-email?token=${token}&email=${encodeURIComponent(email)}`),
+  resendVerification: (email) => apiCall('/users/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email })
   })
 }
 

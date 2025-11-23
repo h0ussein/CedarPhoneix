@@ -34,6 +34,12 @@ const Account = () => {
           setLoadingProfile(true)
           const data = await usersAPI.getProfile()
           if (data.success && data.data) {
+            // Check if email verification is required
+            if (data.data.requiresVerification || !data.data.isEmailVerified) {
+              setUserProfile(data.data)
+              return // Don't set form data, will show verification message
+            }
+            
             setUserProfile(data.data)
             const parsedPhone = parsePhoneNumber(data.data.phone)
             setFormData({
@@ -46,13 +52,17 @@ const Account = () => {
           }
         } catch (error) {
           console.error('Error fetching user profile:', error)
+          if (error.message && error.message.includes('verify your email')) {
+            // User needs to verify email
+            setUserProfile({ requiresVerification: true, email: user?.email })
+          }
         } finally {
           setLoadingProfile(false)
         }
       }
     }
     fetchUserProfile()
-  }, [isAuthenticated])
+  }, [isAuthenticated, user])
 
   const handleChange = (e) => {
     setFormData({
@@ -186,6 +196,39 @@ const Account = () => {
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-emerald-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading profile...</p>
+                </div>
+              ) : (userProfile?.requiresVerification || (userProfile && !userProfile.isEmailVerified)) ? (
+                <div className="text-center py-12">
+                  <div className="mb-6">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-100 mb-4">
+                      <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Email Verification Required</h3>
+                  <p className="text-gray-600 mb-6">
+                    Please verify your email address to access your account. Check your inbox for the verification link.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await usersAPI.resendVerification(userProfile?.email || user?.email)
+                        toast.success('Verification email sent! Please check your inbox.', {
+                          icon: '📧',
+                          style: { background: '#10b981', color: '#fff' }
+                        })
+                      } catch (error) {
+                        toast.error(error.message || 'Failed to resend verification email', {
+                          icon: '❌',
+                          style: { background: '#ef4444', color: '#fff' }
+                        })
+                      }
+                    }}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-600 hover:shadow-lg transition-all"
+                  >
+                    Resend Verification Email
+                  </button>
                 </div>
               ) : isEditing ? (
                 <form onSubmit={handleSubmit}>

@@ -87,16 +87,23 @@ Message:
 ${message}
     `;
 
+    // Get from email from environment variable (must be from verified domain)
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    
+    if (!fromEmail) {
+      throw new Error('RESEND_FROM_EMAIL environment variable is required. Set it to an email from your verified domain (e.g., noreply@yourdomain.com)');
+    }
+    
     // Send email using Resend
     console.log('🚀 Attempting to send email via Resend...');
     console.log(`   To: ${recipientEmail}`);
-    console.log(`   From: onboarding@resend.dev`);
+    console.log(`   From: ${fromEmail}`);
     console.log(`   Subject: Contact Form: ${subject}`);
     const startTime = Date.now();
     
     try {
       const data = await resend.emails.send({
-        from: 'onboarding@resend.dev', // You can change this after verifying your domain in Resend
+        from: fromEmail,
         to: recipientEmail,
         replyTo: email,
         subject: `Contact Form: ${subject}`,
@@ -150,7 +157,7 @@ Our Ecommerce Team
       try {
         const confStartTime = Date.now();
         await resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: fromEmail,
           to: email,
           subject: `Thank you for contacting us - ${subject}`,
           html: confirmationHtml,

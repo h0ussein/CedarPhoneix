@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 import NavBar from '../components/NavBar'
 import BottomNav from '../components/BottomNav'
 import { useCart } from '../context/CartContext'
@@ -9,7 +9,6 @@ import { combinePhoneNumber, COUNTRY_CODES, DEFAULT_COUNTRY_CODE } from '../util
 
 const Register = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
   const { toggleCart, getCartCount } = useCart()
   const [formData, setFormData] = useState({
     name: '',
@@ -53,8 +52,20 @@ const Register = () => {
         phone: phone
       })
 
-      login(data.data)
-      navigate('/account')
+      // Don't log in - user must verify email first
+      toast.success('Account created! Please check your email to verify your account before logging in.', {
+        icon: '📧',
+        duration: 6000,
+        style: { background: '#10b981', color: '#fff' }
+      })
+      
+      // Redirect to login page
+      navigate('/login', { 
+        state: { 
+          message: 'Account created! Please check your email to verify your account.',
+          email: formData.email 
+        } 
+      })
     } catch (error) {
       console.error('Registration error:', error)
       setError(error.message || 'Registration failed. Please try again.')

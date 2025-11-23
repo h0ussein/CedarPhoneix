@@ -6,7 +6,9 @@ import {
   updateUserProfile,
   getAllUsers,
   deleteUser,
-  updateUserRole
+  updateUserRole,
+  verifyEmail,
+  resendVerificationEmail
 } from '../controller/userController.js';
 import { authenticate, authorizeAdmin } from '../middleware/auth.js';
 
@@ -15,6 +17,8 @@ const router = express.Router();
 // Public routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.get('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerificationEmail);
 
 // Private routes
 router.get('/profile', authenticate, getUserProfile);
